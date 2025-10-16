@@ -44,7 +44,7 @@ La aplicación es capaz de generar reportes detallados y visualizaciones para el
 
 El sistema se estructura en torno al siguiente Modelo Entidad-Relación (MER):
 
-![Diagrama Entidad-Relación](modeloEntidadRelacion.png)
+![Diagrama Entidad-Relación](/Documentacion/modeloEntidadRelacion.png)
 
 ---
 
