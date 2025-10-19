@@ -1,0 +1,37 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Eliminar Cancha - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">⚠️ Confirmar Eliminación</h2>
+    </div>
+    
+    <div style="padding: 1rem; background-color: #fee2e2; border-radius: 6px; margin-bottom: 1.5rem;">
+        <p style="color: #991b1b; font-weight: 600;">
+            ¿Estás seguro de que deseas eliminar la cancha <strong>{{ cancha.nombre }}</strong>?
+        </p>
+        <p style="color: #991b1b; margin-top: 0.5rem;">
+            Esta acción no se puede deshacer y se eliminarán todas las reservas asociadas.
+        </p>
+    </div>
+    
+    <div style="background-color: #f3f4f6; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+        <p><strong>Información de la Cancha:</strong></p>
+        <ul style="margin-top: 0.5rem;">
+            <li>Tipo: {{ cancha.tipo_cancha.nombre }}</li>
+            <li>Precio por hora: ${{ cancha.precio_por_hora }}</li>
+            <li>Reservas registradas: {{ cancha.reservas.count }}</li>
+        </ul>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">🗑️ Sí, Eliminar Cancha</button>
+            <a href="{% url 'cancha_lista' %}" class="btn btn-secondary">❌ Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

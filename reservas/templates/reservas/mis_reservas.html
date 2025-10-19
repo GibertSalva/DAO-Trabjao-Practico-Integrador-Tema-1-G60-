@@ -1,0 +1,84 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Mis Reservas - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-between align-center">
+        <h2 class="card-title">📅 Mis Reservas</h2>
+        <a href="{% url 'reserva_crear' %}" class="btn btn-primary">➕ Nueva Reserva</a>
+    </div>
+    
+    <!-- Filtros -->
+    <form method="get" style="background-color: #f3f4f6; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+        <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 1rem;">
+            <div>
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    {% for codigo, nombre in estados %}
+                    <option value="{{ codigo }}" {% if request.GET.estado == codigo %}selected{% endif %}>
+                        {{ nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 Filtrar</button>
+            </div>
+        </div>
+    </form>
+    
+    {% if reservas %}
+    <div style="overflow-x: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cancha</th>
+                    <th>Fecha y Hora Inicio</th>
+                    <th>Fecha y Hora Fin</th>
+                    <th>Estado</th>
+                    <th>Monto</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reserva in reservas %}
+                <tr>
+                    <td>{{ reserva.id }}</td>
+                    <td>{{ reserva.cancha.nombre }}</td>
+                    <td>{{ reserva.fecha_hora_inicio|date:"d/m/Y H:i" }}</td>
+                    <td>{{ reserva.fecha_hora_fin|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if reserva.estado == 'CONFIRMADA' %}
+                            <span class="badge badge-success">✓ Confirmada</span>
+                        {% elif reserva.estado == 'PENDIENTE' %}
+                            <span class="badge badge-warning">⏳ Pendiente</span>
+                        {% else %}
+                            <span class="badge badge-danger">✗ Cancelada</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: 600; color: #10b981;">
+                        {% if reserva.pago %}
+                            ${{ reserva.pago.monto_total }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'reserva_detalle' reserva.id %}" class="btn btn-sm btn-secondary">👁️ Ver Detalle</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center" style="padding: 3rem;">
+        <p class="text-muted" style="font-size: 1.2rem;">No tienes reservas aún.</p>
+        <a href="{% url 'reserva_crear' %}" class="btn btn-primary mt-2">Crear tu primera reserva</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

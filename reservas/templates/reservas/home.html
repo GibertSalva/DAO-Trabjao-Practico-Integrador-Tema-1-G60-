@@ -1,0 +1,91 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Inicio - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="text-center mb-3">
+    <h1>⚽ Bienvenido al Sistema de Reservas de Canchas Deportivas</h1>
+    <p class="text-muted">Gestiona clientes, canchas y reservas de manera sencilla y eficiente</p>
+</div>
+
+<!-- Estadísticas -->
+<div class="stats-grid">
+    <div class="stat-card" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+        <h3>{{ total_clientes }}</h3>
+        <p>Clientes Registrados</p>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+        <h3>{{ total_canchas }}</h3>
+        <p>Canchas Disponibles</p>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+        <h3>{{ reservas_pendientes }}</h3>
+        <p>Reservas Pendientes</p>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+        <h3>{{ reservas_activas }}</h3>
+        <p>Reservas Confirmadas</p>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Acciones Rápidas</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <a href="{% url 'reserva_crear' %}" class="btn btn-primary">
+            📅 Nueva Reserva
+        </a>
+        <a href="{% url 'cliente_crear' %}" class="btn btn-success">
+            👤 Registrar Cliente
+        </a>
+        <a href="{% url 'cancha_crear' %}" class="btn btn-warning">
+            🏟️ Agregar Cancha
+        </a>
+        <a href="{% url 'reserva_lista' %}" class="btn btn-secondary">
+            📋 Ver Reservas
+        </a>
+    </div>
+</div>
+
+<!-- Información del Sistema -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Sobre el Sistema</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div>
+            <h3 style="color: #2563eb; margin-bottom: 0.5rem;">✨ Funcionalidades</h3>
+            <ul style="line-height: 2;">
+                <li>Gestión completa de clientes</li>
+                <li>Administración de canchas y tipos</li>
+                <li>Sistema de reservas con validación</li>
+                <li>Control de servicios adicionales</li>
+                <li>Gestión de torneos</li>
+                <li>Módulo de pagos</li>
+            </ul>
+        </div>
+        <div>
+            <h3 style="color: #10b981; margin-bottom: 0.5rem;">📊 Reportes</h3>
+            <ul style="line-height: 2;">
+                <li>Reservas por cliente</li>
+                <li>Uso de canchas por período</li>
+                <li>Ranking de canchas más utilizadas</li>
+                <li>Estadísticas mensuales</li>
+                <li>Control de ingresos</li>
+            </ul>
+        </div>
+        <div>
+            <h3 style="color: #f59e0b; margin-bottom: 0.5rem;">🔧 Tecnologías</h3>
+            <ul style="line-height: 2;">
+                <li>Django 5.2</li>
+                <li>SQLite Database</li>
+                <li>HTML5 & CSS3</li>
+                <li>JavaScript</li>
+                <li>Python 3.x</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

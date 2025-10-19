@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Reservas de Canchas{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'reservas/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="{% url 'home' %}" class="navbar-brand">⚽ Reservas Deportivas</a>
+            <ul class="navbar-nav">
+                <li><a href="{% url 'home' %}" class="nav-link">Inicio</a></li>
+                
+                {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                        <!-- Menú para administradores -->
+                        <li><a href="{% url 'cliente_lista' %}" class="nav-link">Clientes</a></li>
+                        <li><a href="{% url 'cancha_lista' %}" class="nav-link">Canchas</a></li>
+                        <li><a href="{% url 'reserva_lista' %}" class="nav-link">Todas las Reservas</a></li>
+                        <li><a href="/admin/" class="nav-link">Admin</a></li>
+                    {% else %}
+                        <!-- Menú para clientes -->
+                        <li><a href="{% url 'cancha_lista' %}" class="nav-link">Canchas</a></li>
+                        <li><a href="{% url 'mis_reservas' %}" class="nav-link">Mis Reservas</a></li>
+                        <li><a href="{% url 'reserva_crear' %}" class="nav-link">Nueva Reserva</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'perfil' %}" class="nav-link">👤 {{ user.username }}</a></li>
+                    <li><a href="{% url 'logout' %}" class="nav-link">Cerrar Sesión</a></li>
+                {% else %}
+                    <!-- Menú para usuarios no autenticados -->
+                    <li><a href="{% url 'cancha_lista' %}" class="nav-link">Canchas</a></li>
+                    <li><a href="{% url 'login' %}" class="nav-link">Iniciar Sesión</a></li>
+                    <li><a href="{% url 'registro' %}" class="nav-link">Registrarse</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-2">
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Sistema de Reservas de Canchas Deportivas | Grupo 60 - DAO</p>
+            <p class="text-muted">Salvador Gibert | Ignacio Maspero | Tiziana Carrizo | Agustin Rey Laje | Marco Figueroa</p>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

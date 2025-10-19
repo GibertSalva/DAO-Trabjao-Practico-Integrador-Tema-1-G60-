@@ -1,0 +1,71 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Canchas - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-between align-center">
+        <h2 class="card-title">🏟️ Canchas Disponibles</h2>
+        <a href="{% url 'cancha_crear' %}" class="btn btn-primary">➕ Nueva Cancha</a>
+    </div>
+    
+    {% if canchas %}
+    <div style="overflow-x: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Precio por Hora</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cancha in canchas %}
+                <tr>
+                    <td>{{ cancha.id }}</td>
+                    <td>{{ cancha.nombre }}</td>
+                    <td><span class="badge badge-info">{{ cancha.tipo_cancha.nombre }}</span></td>
+                    <td style="font-weight: 600; color: #10b981;">${{ cancha.precio_por_hora }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{% url 'cancha_detalle' cancha.id %}" class="btn btn-sm btn-secondary">👁️ Ver</a>
+                            <a href="{% url 'cancha_editar' cancha.id %}" class="btn btn-sm btn-warning">✏️ Editar</a>
+                            <a href="{% url 'cancha_eliminar' cancha.id %}" class="btn btn-sm btn-danger">🗑️ Eliminar</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center" style="padding: 3rem;">
+        <p class="text-muted" style="font-size: 1.2rem;">No hay canchas registradas aún.</p>
+        <a href="{% url 'cancha_crear' %}" class="btn btn-primary mt-2">Agregar la primera cancha</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if tipos_cancha %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">📊 Tipos de Canchas Disponibles</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        {% for tipo in tipos_cancha %}
+        <div style="padding: 1rem; background-color: #f3f4f6; border-radius: 6px;">
+            <h4 style="color: #2563eb; margin-bottom: 0.5rem;">{{ tipo.nombre }}</h4>
+            <p class="text-muted" style="font-size: 0.875rem;">
+                {{ tipo.descripcion|default:"Sin descripción" }}
+            </p>
+            <p style="margin-top: 0.5rem; font-weight: 600;">
+                Canchas: {{ tipo.canchas.count }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

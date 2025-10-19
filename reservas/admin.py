@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import TipoCancha, Cliente, Cancha, Servicio, Torneo, Reserva, Pago
 
-# Registra tus modelos aquí
+# Aca registramos los modelos para que aparezcan en el admin de Django
 admin.site.register(TipoCancha)
 admin.site.register(Cliente)
 admin.site.register(Cancha)

@@ -1,0 +1,62 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{% if cancha %}Editar{% else %}Nueva{% endif %} Cancha - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            {% if cancha %}
+                ✏️ Editar Cancha: {{ cancha.nombre }}
+            {% else %}
+                ➕ Agregar Nueva Cancha
+            {% endif %}
+        </h2>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="nombre" class="form-label">Nombre de la Cancha *</label>
+            <input type="text" id="nombre" name="nombre" class="form-control" 
+                   value="{{ cancha.nombre|default:'' }}" 
+                   placeholder="Ej: Cancha 1 - Central" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="tipo_cancha" class="form-label">Tipo de Cancha *</label>
+            <select id="tipo_cancha" name="tipo_cancha" class="form-select" required>
+                <option value="">Seleccionar tipo...</option>
+                {% for tipo in tipos_cancha %}
+                <option value="{{ tipo.id }}" 
+                        {% if cancha and cancha.tipo_cancha.id == tipo.id %}selected{% endif %}>
+                    {{ tipo.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if not tipos_cancha %}
+            <p class="text-muted mt-1" style="font-size: 0.875rem;">
+                ⚠️ No hay tipos de cancha disponibles. Créalos desde el panel de administración.
+            </p>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="precio_por_hora" class="form-label">Precio por Hora ($) *</label>
+            <input type="number" id="precio_por_hora" name="precio_por_hora" 
+                   class="form-control" 
+                   value="{{ cancha.precio_por_hora|default:'' }}" 
+                   step="0.01" min="0" 
+                   placeholder="0.00" required>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                {% if cancha %}💾 Guardar Cambios{% else %}➕ Crear Cancha{% endif %}
+            </button>
+            <a href="{% url 'cancha_lista' %}" class="btn btn-secondary">❌ Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
