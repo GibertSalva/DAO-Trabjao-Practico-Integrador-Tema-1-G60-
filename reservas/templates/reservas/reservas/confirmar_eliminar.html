@@ -1,0 +1,139 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Cancelar Reserva - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-3xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Confirmar Cancelación de Reserva
+        </h2>
+        
+        <div class="alert alert-error shadow-lg mb-6">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <h3 class="font-bold">¿Estás seguro de que deseas cancelar esta reserva?</h3>
+                    <div class="text-sm mt-1">La reserva cambiará su estado a "CANCELADA" y el horario quedará disponible nuevamente.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Información de la Reserva #{{ reserva.id }}
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="stat bg-gradient-to-br from-blue-50 to-blue-100 rounded-box shadow">
+                    <div class="stat-figure text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div class="stat-title">Cliente</div>
+                    <div class="stat-value text-xl text-primary">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
+                </div>
+                
+                <div class="stat bg-gradient-to-br from-green-50 to-green-100 rounded-box shadow">
+                    <div class="stat-figure text-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <div class="stat-title">Cancha</div>
+                    <div class="stat-value text-xl text-success">{{ reserva.cancha.nombre }}</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="stat bg-gradient-to-br from-orange-50 to-orange-100 rounded-box shadow">
+                    <div class="stat-title">Fecha</div>
+                    <div class="stat-value text-lg">{{ reserva.fecha_hora_inicio|date:"d/m/Y" }}</div>
+                </div>
+                
+                <div class="stat bg-gradient-to-br from-purple-50 to-purple-100 rounded-box shadow">
+                    <div class="stat-title">Horario</div>
+                    <div class="stat-value text-base font-mono">
+                        {{ reserva.fecha_hora_inicio|date:"H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}
+                    </div>
+                </div>
+                
+                <div class="stat bg-gradient-to-br from-gray-50 to-gray-100 rounded-box shadow">
+                    <div class="stat-title">Estado Actual</div>
+                    <div class="stat-value text-lg">
+                        {% if reserva.estado == 'CONFIRMADA' %}
+                            <span class="badge badge-success badge-lg">Confirmada</span>
+                        {% elif reserva.estado == 'PENDIENTE' %}
+                            <span class="badge badge-warning badge-lg">Pendiente</span>
+                        {% else %}
+                            <span class="badge badge-error badge-lg">Cancelada</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if reserva.pago %}
+        <div class="alert alert-warning shadow-lg mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">Información de Pago</h3>
+                <div class="text-sm">
+                    Monto total de la reserva: <span class="font-bold text-lg">${{ reserva.pago.monto_total }}</span>
+                    {% if reserva.pago.estado == 'PAGADO' %}
+                        <br>El pago se procesará como reembolso según las políticas del establecimiento.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if reserva.servicios.all %}
+        <div class="mb-6">
+            <h4 class="font-semibold mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Servicios contratados:
+            </h4>
+            <div class="flex flex-wrap gap-2">
+                {% for servicio in reserva.servicios.all %}
+                <span class="badge badge-outline badge-lg">{{ servicio.nombre }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="divider"></div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'reserva_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    No, Volver
+                </a>
+                <button type="submit" class="btn btn-error gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Sí, Cancelar Reserva
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

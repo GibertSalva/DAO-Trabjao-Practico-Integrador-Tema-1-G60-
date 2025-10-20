@@ -1,0 +1,98 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{% if cancha %}Editar{% else %}Nueva{% endif %} Cancha - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-2xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            {% if cancha %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editar Cancha: {{ cancha.nombre }}
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Agregar Nueva Cancha
+            {% endif %}
+        </h2>
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Nombre de la Cancha *</span>
+                </label>
+                <input type="text" id="nombre" name="nombre" 
+                       class="input input-bordered w-full" 
+                       value="{{ cancha.nombre|default:'' }}" 
+                       placeholder="Ej: Cancha 1 - Central" required>
+                <label class="label">
+                    <span class="label-text-alt">Nombre descriptivo para identificar la cancha</span>
+                </label>
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Tipo de Cancha *</span>
+                </label>
+                <select id="tipo_cancha" name="tipo_cancha" class="select select-bordered w-full" required>
+                    <option value="" disabled {% if not cancha %}selected{% endif %}>Seleccionar tipo de cancha...</option>
+                    {% for tipo in tipos_cancha %}
+                    <option value="{{ tipo.id }}" 
+                            {% if cancha and cancha.tipo_cancha.id == tipo.id %}selected{% endif %}>
+                        {{ tipo.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not tipos_cancha %}
+                <div class="alert alert-warning mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>No hay tipos de cancha disponibles. Créalos desde el panel de administración.</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Precio por Hora ($) *</span>
+                </label>
+                <label class="input-group">
+                    <span>$</span>
+                    <input type="number" id="precio_por_hora" name="precio_por_hora" 
+                           class="input input-bordered w-full" 
+                           value="{{ cancha.precio_por_hora|default:'' }}" 
+                           step="0.01" min="0" 
+                           placeholder="0.00" required>
+                    <span>ARS</span>
+                </label>
+                <label class="label">
+                    <span class="label-text-alt">Tarifa por hora de uso de la cancha</span>
+                </label>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'cancha_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {% if cancha %}Guardar Cambios{% else %}Crear Cancha{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

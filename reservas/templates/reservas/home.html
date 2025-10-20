@@ -2,89 +2,87 @@
 
 {% block title %}Inicio - Sistema de Reservas{% endblock %}
 
+
+
 {% block content %}
-<div class="text-center mb-3">
-    <h1>⚽ Bienvenido al Sistema de Reservas de Canchas Deportivas</h1>
-    <p class="text-muted">Gestiona clientes, canchas y reservas de manera sencilla y eficiente</p>
+<!-- Hero Section -->
+<div class="hero bg-gradient-to-r from-primary to-secondary rounded-lg shadow-xl mb-8">
+    <div class="hero-content text-center text-primary-content py-12">
+        <div class="max-w-md">
+            <h1 class="text-4xl font-bold mb-4"> -  Reservas Deportivas - </h1>
+            <p class="text-m opacity-90">Gestión de clientes, canchas y reservas de manera sencilla y eficiente</p>
+        </div>
+    </div>
 </div>
 
 <!-- Estadísticas -->
-<div class="stats-grid">
-    <div class="stat-card" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-        <h3>{{ total_clientes }}</h3>
-        <p>Clientes Registrados</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
+
+    <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+        <div class="card-body flex flex-row justify-between items-center p-6">
+            <div class="stat-title text-white font-semibold text-base">Clientes Registrados:</div>
+            <div class="stat-value text-white  text-base l font-bold">{{ total_clientes }}</div>
+        </div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-        <h3>{{ total_canchas }}</h3>
-        <p>Canchas Disponibles</p>
+
+    <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+        <div class="card-body flex flex-row justify-between items-center p-6">
+            <div class="stat-title text-white font-semibold text-base">Canchas Disponibles:</div>
+            <div class="stat-value text-white  text-base  font-bold">{{ total_canchas }}</div>
+        </div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-        <h3>{{ reservas_pendientes }}</h3>
-        <p>Reservas Pendientes</p>
+
+    <div class="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-lg">
+        <div class="card-body flex flex-row justify-between items-center p-6">
+            <div class="stat-title text-white font-semibold text-base">🏆 Torneos Vigentes:</div>
+            <div class="stat-value text-white  text-base font-bold">{{ torneos_vigentes }}</div>
+        </div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-        <h3>{{ reservas_activas }}</h3>
-        <p>Reservas Confirmadas</p>
+
+    <div class="card bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg">
+        <div class="card-body flex flex-row justify-between items-center p-6">
+            <div class="stat-title text-white font-semibold text-base">Reservas Pendientes:</div>
+            <div class="stat-value text-white text-base font-bold">{{ reservas_pendientes }}</div>
+        </div>
+    </div>
+
+    <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+        <div class="card-body flex flex-row justify-between items-center p-6">
+            <div class="stat-title text-white font-semibold text-base">Reservas Confirmadas:</div>
+            <div class="stat-value text-white  text-base  font-bold">{{ reservas_activas }}</div>
+        </div>
     </div>
 </div>
 
 <!-- Acciones Rápidas -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Acciones Rápidas</h2>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-        <a href="{% url 'reserva_crear' %}" class="btn btn-primary">
-            📅 Nueva Reserva
-        </a>
-        <a href="{% url 'cliente_crear' %}" class="btn btn-success">
-            👤 Registrar Cliente
-        </a>
-        <a href="{% url 'cancha_crear' %}" class="btn btn-warning">
-            🏟️ Agregar Cancha
-        </a>
-        <a href="{% url 'reserva_lista' %}" class="btn btn-secondary">
-            📋 Ver Reservas
-        </a>
-    </div>
-</div>
-
-<!-- Información del Sistema -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Sobre el Sistema</h2>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-        <div>
-            <h3 style="color: #2563eb; margin-bottom: 0.5rem;">✨ Funcionalidades</h3>
-            <ul style="line-height: 2;">
-                <li>Gestión completa de clientes</li>
-                <li>Administración de canchas y tipos</li>
-                <li>Sistema de reservas con validación</li>
-                <li>Control de servicios adicionales</li>
-                <li>Gestión de torneos</li>
-                <li>Módulo de pagos</li>
-            </ul>
-        </div>
-        <div>
-            <h3 style="color: #10b981; margin-bottom: 0.5rem;">📊 Reportes</h3>
-            <ul style="line-height: 2;">
-                <li>Reservas por cliente</li>
-                <li>Uso de canchas por período</li>
-                <li>Ranking de canchas más utilizadas</li>
-                <li>Estadísticas mensuales</li>
-                <li>Control de ingresos</li>
-            </ul>
-        </div>
-        <div>
-            <h3 style="color: #f59e0b; margin-bottom: 0.5rem;">🔧 Tecnologías</h3>
-            <ul style="line-height: 2;">
-                <li>Django 5.2</li>
-                <li>SQLite Database</li>
-                <li>HTML5 & CSS3</li>
-                <li>JavaScript</li>
-                <li>Python 3.x</li>
-            </ul>
+<div class="card bg-base-100 shadow-xl max-w-full">
+    <div class="card-body">
+        <h2 class="card-title text-2xl mb-6 justify-center">Acciones Rápidas</h2>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Nueva Reserva
+            </a>
+            <a href="{% url 'cliente_crear' %}" class="btn btn-success gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Registrar Cliente
+            </a>
+            <a href="{% url 'cancha_crear' %}" class="btn btn-warning gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Agregar Cancha
+            </a>
+            <a href="{% url 'reserva_lista' %}" class="btn btn-info gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Ver Reservas
+            </a>
         </div>
     </div>
 </div>

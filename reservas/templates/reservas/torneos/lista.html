@@ -1,0 +1,211 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Gestión de Torneos - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h2 class="text-3xl font-bold flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+        Torneos y Campeonatos
+        <span class="badge badge-primary badge-lg">{{ total_torneos }}</span>
+    </h2>
+    <a href="{% url 'torneo_crear' %}" class="btn btn-primary gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nuevo Torneo
+    </a>
+</div>
+
+<!-- Torneos Activos -->
+{% if torneos_activos %}
+<div class="mb-8">
+    <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span class="badge badge-success badge-lg">EN CURSO</span>
+        Torneos Activos
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for torneo in torneos_activos %}
+        <div class="card bg-gradient-to-br from-green-50 to-green-100 shadow-xl border-2 border-green-500">
+            <div class="card-body">
+                <h2 class="card-title text-xl">
+                    🏆 {{ torneo.nombre }}
+                    <span class="badge badge-success">ACTIVO</span>
+                </h2>
+                <p class="text-sm opacity-80 line-clamp-2">{{ torneo.descripcion|default:"Sin descripción" }}</p>
+                
+                <div class="divider my-2"></div>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📅 Inicio:</span>
+                        <span>{{ torneo.fecha_inicio|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-semibold">🏁 Fin:</span>
+                        <span>{{ torneo.fecha_fin|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if torneo.premio %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">🎁 Premio:</span>
+                        <span class="font-bold text-success">{{ torneo.premio }}</span>
+                    </div>
+                    {% endif %}
+                    {% if torneo.max_equipos %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">👥 Equipos:</span>
+                        <span>Máx. {{ torneo.max_equipos }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📋 Reservas:</span>
+                        <span class="badge badge-primary">{{ torneo.reserva_set.count }}</span>
+                    </div>
+                </div>
+                
+                <div class="card-actions justify-end mt-4">
+                    <a href="{% url 'torneo_detalle' torneo.pk %}" class="btn btn-primary btn-sm">Ver Detalles</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Torneos Próximos -->
+{% if torneos_proximos %}
+<div class="mb-8">
+    <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span class="badge badge-info badge-lg">PRÓXIMOS</span>
+        Torneos Próximos
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for torneo in torneos_proximos %}
+        <div class="card bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl border-2 border-blue-500">
+            <div class="card-body">
+                <h2 class="card-title text-xl">
+                    🏆 {{ torneo.nombre }}
+                    <span class="badge badge-info">PRÓXIMO</span>
+                </h2>
+                <p class="text-sm opacity-80 line-clamp-2">{{ torneo.descripcion|default:"Sin descripción" }}</p>
+                
+                <div class="divider my-2"></div>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📅 Inicio:</span>
+                        <span>{{ torneo.fecha_inicio|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-semibold">🏁 Fin:</span>
+                        <span>{{ torneo.fecha_fin|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if torneo.premio %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">🎁 Premio:</span>
+                        <span class="font-bold text-success">{{ torneo.premio }}</span>
+                    </div>
+                    {% endif %}
+                    {% if torneo.costo_inscripcion %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">💰 Inscripción:</span>
+                        <span class="font-bold">${{ torneo.costo_inscripcion|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📋 Reservas:</span>
+                        <span class="badge badge-primary">{{ torneo.reserva_set.count }}</span>
+                    </div>
+                </div>
+                
+                <div class="card-actions justify-end mt-4">
+                    <a href="{% url 'torneo_detalle' torneo.pk %}" class="btn btn-info btn-sm">Ver Detalles</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Torneos Finalizados -->
+{% if torneos_finalizados %}
+<div class="mb-8">
+    <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span class="badge badge-ghost badge-lg">FINALIZADOS</span>
+        Torneos Finalizados
+    </h3>
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th class="bg-base-300">Torneo</th>
+                    <th class="bg-base-300">Período</th>
+                    <th class="bg-base-300">Premio</th>
+                    <th class="bg-base-300">Reservas</th>
+                    <th class="bg-base-300">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for torneo in torneos_finalizados %}
+                <tr class="hover">
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🏆</span>
+                            <div>
+                                <div class="font-bold">{{ torneo.nombre }}</div>
+                                <div class="text-sm opacity-70">{{ torneo.descripcion|truncatewords:10|default:"Sin descripción" }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-sm">
+                            <div>{{ torneo.fecha_inicio|date:"d/m/Y" }}</div>
+                            <div class="opacity-70">{{ torneo.fecha_fin|date:"d/m/Y" }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if torneo.premio %}
+                        <span class="font-semibold text-success">{{ torneo.premio }}</span>
+                        {% else %}
+                        <span class="opacity-50">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-primary badge-lg">{{ torneo.reserva_set.count }}</span>
+                    </td>
+                    <td>
+                        <a href="{% url 'torneo_detalle' torneo.pk %}" class="btn btn-ghost btn-sm">Ver Detalles</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Mensaje si no hay torneos -->
+{% if not torneos_activos and not torneos_proximos and not torneos_finalizados %}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body items-center text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+        <h3 class="text-2xl font-bold mb-2">No hay torneos registrados</h3>
+        <p class="text-base-content/60 mb-4">Comienza creando tu primer torneo para gestionar competiciones.</p>
+        <a href="{% url 'torneo_crear' %}" class="btn btn-primary gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Crear Primer Torneo
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

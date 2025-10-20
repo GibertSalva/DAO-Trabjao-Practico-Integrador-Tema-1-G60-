@@ -1,0 +1,239 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{{ torneo.nombre }} - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div class="flex items-center gap-4">
+        <a href="{% url 'torneo_lista' %}" class="btn btn-ghost btn-circle">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+        <div>
+            <h2 class="text-3xl font-bold flex items-center gap-2">
+                🏆 {{ torneo.nombre }}
+            </h2>
+            <p class="text-base-content/60 mt-1">{{ torneo.descripcion|default:"Sin descripción" }}</p>
+        </div>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'torneo_editar' torneo.pk %}" class="btn btn-warning gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Editar
+        </a>
+        <a href="{% url 'torneo_eliminar' torneo.pk %}" class="btn btn-error gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Eliminar
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="card bg-gradient-to-br from-primary to-primary-focus text-primary-content shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-80">Estado</p>
+                    <h3 class="text-2xl font-bold">{{ estado }}</h3>
+                    {% if dias_restantes > 0 %}
+                    <p class="text-xs opacity-80 mt-1">{{ dias_restantes }} día{{ dias_restantes|pluralize }} restante{{ dias_restantes|pluralize }}</p>
+                    {% endif %}
+                </div>
+                <span class="badge {{ estado_clase }} badge-lg">{{ estado }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-gradient-to-br from-success to-success-focus text-white shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-80">Total Reservas</p>
+                    <h3 class="text-3xl font-bold">{{ total_reservas }}</h3>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+            <div class="flex gap-2 mt-2">
+                <span class="badge badge-success badge-sm">✓ {{ reservas_confirmadas }}</span>
+                <span class="badge badge-warning badge-sm">⏳ {{ reservas_pendientes }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-gradient-to-br from-info to-info-focus text-white shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-80">Inscripciones</p>
+                    <h3 class="text-2xl font-bold">${{ ingresos_inscripciones|floatformat:0 }}</h3>
+                    {% if torneo.costo_inscripcion %}
+                    <p class="text-xs opacity-80 mt-1">${{ torneo.costo_inscripcion|floatformat:2 }} x {{ total_reservas }}</p>
+                    {% endif %}
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-gradient-to-br from-warning to-warning-focus text-white shadow-xl">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-80">Ingresos Totales</p>
+                    <h3 class="text-2xl font-bold">${{ ingresos_totales|floatformat:0 }}</h3>
+                    <p class="text-xs opacity-80 mt-1">Inscripciones + Reservas</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Torneo -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h3 class="card-title text-xl">📅 Fechas</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">Inicio:</span>
+                    <span>{{ torneo.fecha_inicio|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">Finalización:</span>
+                    <span>{{ torneo.fecha_fin|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">Duración:</span>
+                    <span class="badge badge-primary">{{ torneo.fecha_fin|timeuntil:torneo.fecha_inicio }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h3 class="card-title text-xl">🎁 Premio</h3>
+            <div class="space-y-2">
+                {% if torneo.premio %}
+                <p class="text-2xl font-bold text-success">{{ torneo.premio }}</p>
+                {% else %}
+                <p class="text-base-content/60">No especificado</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h3 class="card-title text-xl">👥 Participación</h3>
+            <div class="space-y-2">
+                {% if torneo.max_equipos %}
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">Límite:</span>
+                    <span>{{ torneo.max_equipos }} equipos</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">Inscritos:</span>
+                    <span class="badge badge-primary badge-lg">{{ total_reservas }}</span>
+                </div>
+                <progress class="progress progress-primary" value="{{ total_reservas }}" max="{{ torneo.max_equipos }}"></progress>
+                {% else %}
+                <p class="text-base-content/60">Sin límite de equipos</p>
+                <p class="text-sm">{{ total_reservas }} equipo{{ total_reservas|pluralize }} inscrito{{ total_reservas|pluralize }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Reservas del Torneo -->
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h3 class="card-title text-2xl mb-4">
+            📋 Reservas del Torneo
+            <span class="badge badge-primary badge-lg">{{ total_reservas }}</span>
+        </h3>
+
+        {% if reservas %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr>
+                        <th class="bg-primary text-primary-content">#</th>
+                        <th class="bg-primary text-primary-content">Fecha y Hora</th>
+                        <th class="bg-primary text-primary-content">Cliente</th>
+                        <th class="bg-primary text-primary-content">Cancha</th>
+                        <th class="bg-primary text-primary-content">Estado</th>
+                        <th class="bg-primary text-primary-content">Costo</th>
+                        <th class="bg-primary text-primary-content">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr class="hover">
+                        <td class="font-bold">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="text-sm">
+                                <div class="font-semibold">{{ reserva.fecha_hora_inicio|date:"d/m/Y" }}</div>
+                                <div class="opacity-70">{{ reserva.fecha_hora_inicio|date:"H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-full w-8">
+                                        <span class="text-xs">{{ reserva.cliente.nombre.0 }}{{ reserva.cliente.apellido.0 }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
+                                    <div class="text-xs opacity-70">DNI: {{ reserva.cliente.dni }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="font-semibold">{{ reserva.cancha.nombre }}</div>
+                            <div class="text-xs opacity-70">{{ reserva.cancha.tipo_cancha.nombre }}</div>
+                        </td>
+                        <td>
+                            {% if reserva.estado == 'CONFIRMADA' %}
+                            <span class="badge badge-success">{{ reserva.estado }}</span>
+                            {% elif reserva.estado == 'PENDIENTE' %}
+                            <span class="badge badge-warning">{{ reserva.estado }}</span>
+                            {% else %}
+                            <span class="badge badge-error">{{ reserva.estado }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="font-bold text-success">${{ reserva.calcular_costo_total|floatformat:2 }}</td>
+                        <td>
+                            <a href="{% url 'reserva_detalle' reserva.pk %}" class="btn btn-ghost btn-sm">Ver</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>No hay reservas asociadas a este torneo todavía.</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

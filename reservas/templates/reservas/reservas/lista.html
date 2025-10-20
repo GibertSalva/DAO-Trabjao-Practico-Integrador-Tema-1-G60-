@@ -1,0 +1,236 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservas - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<!-- Encabezado y botón de nueva reserva -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h2 class="text-3xl font-bold flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        Gestión de Reservas
+    </h2>
+    <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Nueva Reserva
+    </a>
+</div>
+
+<!-- Card de Filtros -->
+<div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body">
+        <h3 class="card-title text-xl mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filtros
+        </h3>
+        <form method="get" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Estado</span>
+                    </label>
+                    <select name="estado" class="select select-bordered w-full">
+                        <option value="">Todos los estados</option>
+                        {% for codigo, nombre in estados %}
+                        <option value="{{ codigo }}" {% if request.GET.estado == codigo %}selected{% endif %}>
+                            {{ nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cliente</span>
+                    </label>
+                    <select name="cliente" class="select select-bordered w-full">
+                        <option value="">Todos los clientes</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cliente.nombre }} {{ cliente.apellido }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cancha</span>
+                    </label>
+                    <select name="cancha" class="select select-bordered w-full">
+                        <option value="">Todas las canchas</option>
+                        {% for cancha in canchas %}
+                        <option value="{{ cancha.id }}" {% if request.GET.cancha == cancha.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cancha.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 justify-end">
+                <a href="{% url 'reserva_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Limpiar
+                </a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Reservas -->
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        {% if reservas %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr>
+                        <th class="bg-primary text-primary-content">ID</th>
+                        <th class="bg-primary text-primary-content">Cliente</th>
+                        <th class="bg-primary text-primary-content">Cancha</th>
+                        <th class="bg-primary text-primary-content">Inicio</th>
+                        <th class="bg-primary text-primary-content">Fin</th>
+                        <th class="bg-primary text-primary-content">Valor</th>
+                        <th class="bg-primary text-primary-content">Estado</th>
+                        <th class="bg-primary text-primary-content">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr class="hover">
+                        <td class="font-bold">{{ reserva.id }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-full w-8">
+                                        <span class="text-xs">{{ reserva.cliente.nombre.0 }}{{ reserva.cliente.apellido.0 }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
+                                    <div class="text-sm opacity-50">{{ reserva.cliente.dni }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span class="font-semibold">{{ reserva.cancha.nombre }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="font-semibold">{{ reserva.fecha_hora_inicio|date:"d/m/Y" }}</span>
+                                <span class="text-sm opacity-70">{{ reserva.fecha_hora_inicio|date:"H:i" }} hs</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="font-semibold">{{ reserva.fecha_hora_fin|date:"d/m/Y" }}</span>
+                                <span class="text-sm opacity-70">{{ reserva.fecha_hora_fin|date:"H:i" }} hs</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="text-success font-bold">${{ reserva.calcular_costo_total|floatformat:2 }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if reserva.estado == 'CONFIRMADA' %}
+                                <span class="badge badge-success gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Confirmada
+                                </span>
+                            {% elif reserva.estado == 'PENDIENTE' %}
+                                <span class="badge badge-warning gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Pendiente
+                                </span>
+                            {% else %}
+                                <span class="badge badge-error gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Cancelada
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown dropdown-end">
+                                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                    </svg>
+                                </label>
+                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                                    <li>
+                                        <a href="{% url 'reserva_detalle' reserva.id %}" class="text-info">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Ver Detalles
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'reserva_editar' reserva.id %}" class="text-warning">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Editar Reserva
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'reserva_eliminar' reserva.id %}" class="text-error">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                            Cancelar Reserva
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p class="text-xl text-base-content/60 mb-4">No se encontraron reservas</p>
+            <p class="text-sm text-base-content/40 mb-6">Intenta ajustar los filtros o crea una nueva reserva</p>
+            <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Crear Primera Reserva
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

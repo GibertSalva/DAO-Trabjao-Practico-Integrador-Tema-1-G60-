@@ -1,0 +1,246 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{% if reserva %}Editar{% else %}Nueva{% endif %} Reserva - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-4xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            {% if reserva %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editar Reserva #{{ reserva.id }}
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Crear Nueva Reserva
+            {% endif %}
+        </h2>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if not reserva %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cliente *</span>
+                    </label>
+                    <select id="cliente" name="cliente" class="select select-bordered w-full" required>
+                        <option value="" disabled selected>Seleccionar cliente...</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">
+                            {{ cliente.nombre }} {{ cliente.apellido }} - DNI: {{ cliente.dni }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not clientes %}
+                    <label class="label">
+                        <span class="label-text-alt text-warning">
+                            ⚠️ No hay clientes. <a href="{% url 'cliente_crear' %}" class="link link-primary">Crear uno</a>
+                        </span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cancha *</span>
+                    </label>
+                    <select id="cancha" name="cancha" class="select select-bordered w-full" required>
+                        <option value="" disabled selected>Seleccionar cancha...</option>
+                        {% for cancha in canchas %}
+                        <option value="{{ cancha.id }}">
+                            {{ cancha.nombre }} - ${{ cancha.precio_por_hora }}/hora
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if not canchas %}
+                    <label class="label">
+                        <span class="label-text-alt text-warning">
+                            ⚠️ No hay canchas. <a href="{% url 'cancha_crear' %}" class="link link-primary">Crear una</a>
+                        </span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Fecha y Hora de Inicio *</span>
+                    </label>
+                    <input type="datetime-local" id="fecha_hora_inicio" name="fecha_hora_inicio" 
+                           class="input input-bordered w-full" required>
+                    <label class="label">
+                        <span class="label-text-alt">Horario disponible: 08:00 - 23:00</span>
+                    </label>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Fecha y Hora de Fin *</span>
+                    </label>
+                    <input type="datetime-local" id="fecha_hora_fin" name="fecha_hora_fin" 
+                           class="input input-bordered w-full" required>
+                    <label class="label">
+                        <span class="label-text-alt">Duración: 1 a 4 horas</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Estado *</span>
+                </label>
+                <select id="estado" name="estado" class="select select-bordered w-full" required>
+                    {% for codigo, nombre in estados %}
+                    <option value="{{ codigo }}" {% if not reserva and codigo == 'PENDIENTE' %}selected{% endif %}>
+                        {{ nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% else %}
+            <!-- Vista de edición: mostrar info de reserva existente -->
+            <div class="alert alert-info shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="w-full">
+                    <h3 class="font-bold mb-2">Información de la Reserva</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                        <div><strong>Cliente:</strong> {{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
+                        <div><strong>Cancha:</strong> {{ reserva.cancha.nombre }}</div>
+                        <div><strong>Horario:</strong> {{ reserva.fecha_hora_inicio|date:"d/m/Y H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Estado *</span>
+                </label>
+                <select id="estado" name="estado" class="select select-bordered w-full" required>
+                    {% for codigo, nombre in estados %}
+                    <option value="{{ codigo }}" {% if reserva.estado == codigo %}selected{% endif %}>
+                        {{ nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="divider"></div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Servicios Adicionales (Opcional)
+                    </span>
+                </label>
+                {% if servicios %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-base-200 rounded-box">
+                    {% for servicio in servicios %}
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" name="servicios" value="{{ servicio.id }}" 
+                               class="checkbox checkbox-primary"
+                               {% if reserva and servicio in reserva.servicios.all %}checked{% endif %}>
+                        <span class="label-text">
+                            <span class="font-semibold">{{ servicio.nombre }}</span>
+                            <span class="text-success ml-2">+${{ servicio.costo_adicional }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-sm text-base-content/60 p-4 bg-base-200 rounded-box">
+                    No hay servicios adicionales disponibles.
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                        Torneo (Opcional)
+                    </span>
+                </label>
+                <select id="torneo" name="torneo" class="select select-bordered w-full">
+                    <option value="">Ninguno</option>
+                    {% for torneo in torneos %}
+                    <option value="{{ torneo.id }}"
+                            {% if reserva and reserva.torneo and reserva.torneo.id == torneo.id %}selected{% endif %}>
+                        {{ torneo.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'reserva_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {% if reserva %}Guardar Cambios{% else %}Crear Reserva{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not reserva %}
+<div class="card bg-base-100 shadow-xl max-w-4xl mx-auto mt-6">
+    <div class="card-body">
+        <h3 class="card-title text-xl mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Información Importante
+        </h3>
+        <ul class="space-y-2">
+            <li class="flex items-start gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>El sistema validará automáticamente la disponibilidad de la cancha.</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>No se podrán crear reservas en horarios ya ocupados.</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>El monto total se calculará en base al tiempo y servicios seleccionados.</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Se creará automáticamente un registro de pago asociado a la reserva.</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

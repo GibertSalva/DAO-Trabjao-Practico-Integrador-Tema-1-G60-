@@ -1,0 +1,159 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{% if torneo %}Editar{% else %}Crear{% endif %} Torneo - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Encabezado -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{% if torneo %}{% url 'torneo_detalle' torneo.pk %}{% else %}{% url 'torneo_lista' %}{% endif %}" class="btn btn-ghost btn-circle">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+        <h2 class="text-3xl font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+            {% if torneo %}Editar Torneo{% else %}Nuevo Torneo{% endif %}
+        </h2>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Información Básica -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Información Básica
+                    </h3>
+                    
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-semibold">Nombre del Torneo *</span>
+                        </label>
+                        <input type="text" name="nombre" value="{{ torneo.nombre|default:'' }}" 
+                               class="input input-bordered w-full" required 
+                               placeholder="Ej: Copa Apertura 2025">
+                        <label class="label">
+                            <span class="label-text-alt">El nombre debe ser único y descriptivo</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-semibold">Descripción</span>
+                        </label>
+                        <textarea name="descripcion" class="textarea textarea-bordered h-24" 
+                                  placeholder="Describe el torneo, categorías, reglas especiales, etc.">{{ torneo.descripcion|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Fechas -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Período del Torneo
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Fecha de Inicio *</span>
+                            </label>
+                            <input type="date" name="fecha_inicio" 
+                                   value="{% if torneo %}{{ torneo.fecha_inicio|date:'Y-m-d' }}{% endif %}" 
+                                   class="input input-bordered w-full" required>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Fecha de Finalización *</span>
+                            </label>
+                            <input type="date" name="fecha_fin" 
+                                   value="{% if torneo %}{{ torneo.fecha_fin|date:'Y-m-d' }}{% endif %}" 
+                                   class="input input-bordered w-full" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Detalles Adicionales -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Detalles Adicionales
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Premio</span>
+                            </label>
+                            <input type="text" name="premio" value="{{ torneo.premio|default:'' }}" 
+                                   class="input input-bordered w-full" 
+                                   placeholder="Ej: $50.000 + Trofeo">
+                            <label class="label">
+                                <span class="label-text-alt">Descripción del premio para el ganador</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Costo de Inscripción</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="bg-base-200">$</span>
+                                <input type="number" name="costo_inscripcion" 
+                                       value="{{ torneo.costo_inscripcion|default:'0' }}" 
+                                       class="input input-bordered w-full" min="0" step="0.01"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Máximo de Equipos</span>
+                            </label>
+                            <input type="number" name="max_equipos" 
+                                   value="{{ torneo.max_equipos|default:'' }}" 
+                                   class="input input-bordered w-full" min="2"
+                                   placeholder="Dejar vacío si no hay límite">
+                            <label class="label">
+                                <span class="label-text-alt">Opcional: limita la cantidad de equipos participantes</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="card-actions justify-end pt-6">
+                    <a href="{% if torneo %}{% url 'torneo_detalle' torneo.pk %}{% else %}{% url 'torneo_lista' %}{% endif %}" 
+                       class="btn btn-ghost">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {% if torneo %}Guardar Cambios{% else %}Crear Torneo{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

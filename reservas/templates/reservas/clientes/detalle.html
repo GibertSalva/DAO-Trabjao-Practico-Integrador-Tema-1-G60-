@@ -1,0 +1,146 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Detalles del Cliente - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<!-- Tarjeta de información del cliente -->
+<div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 class="card-title text-3xl">
+                <div class="avatar placeholder">
+                    <div class="bg-primary text-primary-content rounded-full w-12">
+                        <span class="text-xl">{{ cliente.nombre.0 }}{{ cliente.apellido.0 }}</span>
+                    </div>
+                </div>
+                Información del Cliente
+            </h2>
+            <div class="flex gap-2">
+                <a href="{% url 'cliente_editar' cliente.id %}" class="btn btn-warning gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Editar
+                </a>
+                <a href="{% url 'cliente_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver
+                </a>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="stat bg-base-200 rounded-lg">
+                <div class="stat-title">Nombre Completo</div>
+                <div class="stat-value text-2xl">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+            </div>
+            <div class="stat bg-base-200 rounded-lg">
+                <div class="stat-title">DNI</div>
+                <div class="stat-value text-2xl">
+                    <span class="badge badge-lg badge-primary">{{ cliente.dni }}</span>
+                </div>
+            </div>
+            <div class="stat bg-base-200 rounded-lg">
+                <div class="stat-title">Email</div>
+                <div class="stat-value text-lg break-all">{{ cliente.email }}</div>
+            </div>
+            <div class="stat bg-base-200 rounded-lg">
+                <div class="stat-title">Teléfono</div>
+                <div class="stat-value text-2xl">{{ cliente.telefono }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de reservas -->
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h3 class="card-title text-2xl mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Historial de Reservas
+        </h3>
+        
+        {% if reservas %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr>
+                        <th class="bg-primary text-primary-content">ID</th>
+                        <th class="bg-primary text-primary-content">Cancha</th>
+                        <th class="bg-primary text-primary-content">Fecha y Hora</th>
+                        <th class="bg-primary text-primary-content">Estado</th>
+                        <th class="bg-primary text-primary-content">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr class="hover">
+                        <td class="font-bold">{{ reserva.id }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                {{ reserva.cancha.nombre }}
+                            </div>
+                        </td>
+                        <td>{{ reserva.fecha_hora_inicio|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if reserva.estado == 'CONFIRMADA' %}
+                                <span class="badge badge-success gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Confirmada
+                                </span>
+                            {% elif reserva.estado == 'PENDIENTE' %}
+                                <span class="badge badge-warning gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Pendiente
+                                </span>
+                            {% else %}
+                                <span class="badge badge-error gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Cancelada
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'reserva_detalle' reserva.id %}" class="btn btn-sm btn-info gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Ver
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p class="text-lg text-base-content/60 mb-4">Este cliente no tiene reservas aún</p>
+            <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Crear Reserva
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

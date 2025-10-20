@@ -1,0 +1,88 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Eliminar Cancha - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl max-w-3xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Confirmar Eliminación
+        </h2>
+        
+        <div class="alert alert-error shadow-lg mb-6">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <h3 class="font-bold">¿Estás seguro de que deseas eliminar la cancha "{{ cancha.nombre }}"?</h3>
+                    <div class="text-sm mt-1">Esta acción no se puede deshacer y se eliminarán todas las reservas asociadas.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Información de la Cancha
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="stat bg-gradient-to-br from-blue-50 to-blue-100 rounded-box shadow">
+                    <div class="stat-title">Nombre</div>
+                    <div class="stat-value text-2xl text-primary">{{ cancha.nombre }}</div>
+                </div>
+                
+                <div class="stat bg-gradient-to-br from-purple-50 to-purple-100 rounded-box shadow">
+                    <div class="stat-title">Tipo</div>
+                    <div class="stat-value text-xl">
+                        <span class="badge badge-secondary badge-lg">{{ cancha.tipo_cancha.nombre }}</span>
+                    </div>
+                </div>
+                
+                <div class="stat bg-gradient-to-br from-green-50 to-green-100 rounded-box shadow">
+                    <div class="stat-title">Precio/Hora</div>
+                    <div class="stat-value text-xl text-success">${{ cancha.precio_por_hora }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if cancha.reservas.count > 0 %}
+        <div class="alert alert-warning shadow-lg mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">Advertencia: Esta cancha tiene {{ cancha.reservas.count }} reserva{{ cancha.reservas.count|pluralize }}</h3>
+                <div class="text-sm">Todas las reservas asociadas serán eliminadas permanentemente.</div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="divider"></div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'cancha_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-error gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Sí, Eliminar Cancha
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

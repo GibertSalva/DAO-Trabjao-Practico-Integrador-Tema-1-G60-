@@ -2,7 +2,6 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.utils import timezone
-from django.contrib.auth.models import User
 from datetime import datetime, time, timedelta
 import re
 
@@ -42,16 +41,6 @@ class TipoCancha(models.Model):
         ordering = ['nombre']
 
 class Cliente(models.Model):
-    # Vínculo con el usuario de Django (opcional para permitir login)
-    usuario = models.OneToOneField(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="cliente",
-        help_text="Usuario del sistema asociado (opcional)"
-    )
-    
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
     dni = models.CharField(
@@ -168,9 +157,24 @@ class Servicio(models.Model):
         ordering = ['nombre']
 
 class Torneo(models.Model):
-    nombre = models.CharField(max_length=200)
+    nombre = models.CharField(max_length=200, unique=True)
+    descripcion = models.TextField(blank=True, null=True, help_text="Descripción del torneo")
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
+    premio = models.CharField(max_length=200, blank=True, null=True, help_text="Premio del torneo")
+    max_equipos = models.PositiveIntegerField(
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(2)],
+        help_text="Máximo de equipos permitidos (opcional)"
+    )
+    costo_inscripcion = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0)],
+        help_text="Costo de inscripción al torneo"
+    )
     reglamento = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 

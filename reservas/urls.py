@@ -7,13 +7,9 @@ urlpatterns = [
     # Home
     path('', views.home, name='home'),
     
-    # URLs de Autenticación
-    path('registro/', views.registro_view, name='registro'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-    path('perfil/', views.perfil_view, name='perfil'),
-    path('perfil/editar/', views.editar_perfil_view, name='editar_perfil'),
-    path('mis-reservas/', views.mis_reservas_view, name='mis_reservas'),
+    # Reportes
+    path('reportes/', views.reportes, name='reportes'),
+    path('reportes/pdf/', views.reportes_pdf, name='reportes_pdf'),
     
     # URLs de Clientes
     path('clientes/', views.cliente_lista, name='cliente_lista'),
@@ -35,4 +31,11 @@ urlpatterns = [
     path('reservas/<int:pk>/', views.reserva_detalle, name='reserva_detalle'),
     path('reservas/<int:pk>/editar/', views.reserva_editar, name='reserva_editar'),
     path('reservas/<int:pk>/eliminar/', views.reserva_eliminar, name='reserva_eliminar'),
+    
+    # URLs de Torneos
+    path('torneos/', views.torneo_lista, name='torneo_lista'),
+    path('torneos/crear/', views.torneo_crear, name='torneo_crear'),
+    path('torneos/<int:pk>/', views.torneo_detalle, name='torneo_detalle'),
+    path('torneos/<int:pk>/editar/', views.torneo_editar, name='torneo_editar'),
+    path('torneos/<int:pk>/eliminar/', views.torneo_eliminar, name='torneo_eliminar'),
 ]
