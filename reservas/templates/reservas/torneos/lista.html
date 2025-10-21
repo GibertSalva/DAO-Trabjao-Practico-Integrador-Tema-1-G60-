@@ -3,6 +3,7 @@
 {% block title %}Gestión de Torneos - Sistema de Reservas{% endblock %}
 
 {% block content %}
+<div class="container mx-auto px-4">
 <!-- Encabezado -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <h2 class="text-3xl font-bold flex items-center gap-2">
@@ -12,12 +13,20 @@
         Torneos y Campeonatos
         <span class="badge badge-primary badge-lg">{{ total_torneos }}</span>
     </h2>
-    <a href="{% url 'torneo_crear' %}" class="btn btn-primary gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Nuevo Torneo
-    </a>
+    <div class="flex gap-2">
+        <a href="{% url 'equipo_lista' %}" class="btn btn-info gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Ver Equipos
+        </a>
+        <a href="{% url 'torneo_crear' %}" class="btn btn-primary gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Torneo
+        </a>
+    </div>
 </div>
 
 <!-- Torneos Activos -->
@@ -32,7 +41,7 @@
         <div class="card bg-gradient-to-br from-green-50 to-green-100 shadow-xl border-2 border-green-500">
             <div class="card-body">
                 <h2 class="card-title text-xl">
-                    🏆 {{ torneo.nombre }}
+                    {{ torneo.nombre }}
                     <span class="badge badge-success">ACTIVO</span>
                 </h2>
                 <p class="text-sm opacity-80 line-clamp-2">{{ torneo.descripcion|default:"Sin descripción" }}</p>
@@ -41,28 +50,28 @@
                 
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="font-semibold">📅 Inicio:</span>
+                        <span class="font-semibold">Inicio:</span>
                         <span>{{ torneo.fecha_inicio|date:"d/m/Y" }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="font-semibold">🏁 Fin:</span>
+                        <span class="font-semibold">Fin:</span>
                         <span>{{ torneo.fecha_fin|date:"d/m/Y" }}</span>
                     </div>
                     {% if torneo.premio %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">🎁 Premio:</span>
+                        <span class="font-semibold">Premio:</span>
                         <span class="font-bold text-success">{{ torneo.premio }}</span>
                     </div>
                     {% endif %}
                     {% if torneo.max_equipos %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">👥 Equipos:</span>
+                        <span class="font-semibold">Equipos:</span>
                         <span>Máx. {{ torneo.max_equipos }}</span>
                     </div>
                     {% endif %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">📋 Reservas:</span>
-                        <span class="badge badge-primary">{{ torneo.reserva_set.count }}</span>
+                        <span class="font-semibold">Reservas:</span>
+                        <span class="badge badge-success">{{ torneo.reservas.count }}</span>
                     </div>
                 </div>
                 
@@ -88,7 +97,7 @@
         <div class="card bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl border-2 border-blue-500">
             <div class="card-body">
                 <h2 class="card-title text-xl">
-                    🏆 {{ torneo.nombre }}
+                    {{ torneo.nombre }}
                     <span class="badge badge-info">PRÓXIMO</span>
                 </h2>
                 <p class="text-sm opacity-80 line-clamp-2">{{ torneo.descripcion|default:"Sin descripción" }}</p>
@@ -97,28 +106,28 @@
                 
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="font-semibold">📅 Inicio:</span>
+                        <span class="font-semibold">Inicio:</span>
                         <span>{{ torneo.fecha_inicio|date:"d/m/Y" }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="font-semibold">🏁 Fin:</span>
+                        <span class="font-semibold">Fin:</span>
                         <span>{{ torneo.fecha_fin|date:"d/m/Y" }}</span>
                     </div>
                     {% if torneo.premio %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">🎁 Premio:</span>
+                        <span class="font-semibold">Premio:</span>
                         <span class="font-bold text-success">{{ torneo.premio }}</span>
                     </div>
                     {% endif %}
                     {% if torneo.costo_inscripcion %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">💰 Inscripción:</span>
+                        <span class="font-semibold">Inscripción:</span>
                         <span class="font-bold">${{ torneo.costo_inscripcion|floatformat:2 }}</span>
                     </div>
                     {% endif %}
                     <div class="flex justify-between">
-                        <span class="font-semibold">📋 Reservas:</span>
-                        <span class="badge badge-primary">{{ torneo.reserva_set.count }}</span>
+                        <span class="font-semibold">Reservas:</span>
+                        <span class="badge badge-success">{{ torneo.reservas.count }}</span>
                     </div>
                 </div>
                 
@@ -155,7 +164,6 @@
                 <tr class="hover">
                     <td>
                         <div class="flex items-center gap-2">
-                            <span class="text-2xl">🏆</span>
                             <div>
                                 <div class="font-bold">{{ torneo.nombre }}</div>
                                 <div class="text-sm opacity-70">{{ torneo.descripcion|truncatewords:10|default:"Sin descripción" }}</div>
@@ -189,6 +197,34 @@
 </div>
 {% endif %}
 
+<!-- Paginación -->
+{% if torneos.has_other_pages %}
+<div class="flex justify-center mt-6">
+    <div class="btn-group">
+        {% if torneos.has_previous %}
+            <a href="?page=1" class="btn btn-sm">«</a>
+            <a href="?page={{ torneos.previous_page_number }}" class="btn btn-sm">‹</a>
+        {% else %}
+            <button class="btn btn-sm btn-disabled">«</button>
+            <button class="btn btn-sm btn-disabled">‹</button>
+        {% endif %}
+        
+        <button class="btn btn-sm btn-active">Página {{ torneos.number }} de {{ torneos.paginator.num_pages }}</button>
+        
+        {% if torneos.has_next %}
+            <a href="?page={{ torneos.next_page_number }}" class="btn btn-sm">›</a>
+            <a href="?page={{ torneos.paginator.num_pages }}" class="btn btn-sm">»</a>
+        {% else %}
+            <button class="btn btn-sm btn-disabled">›</button>
+            <button class="btn btn-sm btn-disabled">»</button>
+        {% endif %}
+    </div>
+</div>
+<div class="text-center mt-2 text-sm text-base-content/60">
+    Mostrando {{ torneos.start_index }} - {{ torneos.end_index }} de {{ torneos.paginator.count }} torneos
+</div>
+{% endif %}
+
 <!-- Mensaje si no hay torneos -->
 {% if not torneos_activos and not torneos_proximos and not torneos_finalizados %}
 <div class="card bg-base-100 shadow-xl">
@@ -207,5 +243,6 @@
     </div>
 </div>
 {% endif %}
+</div>
 
 {% endblock %}

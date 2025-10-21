@@ -23,40 +23,163 @@
             {% csrf_token %}
             
             {% if not reserva %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-semibold">Cliente *</span>
-                    </label>
-                    <select id="cliente" name="cliente" class="select select-bordered w-full" required>
-                        <option value="" disabled selected>Seleccionar cliente...</option>
-                        {% for cliente in clientes %}
-                        <option value="{{ cliente.id }}">
-                            {{ cliente.nombre }} {{ cliente.apellido }} - DNI: {{ cliente.dni }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% if not clientes %}
-                    <label class="label">
-                        <span class="label-text-alt text-warning">
-                            ⚠️ No hay clientes. <a href="{% url 'cliente_crear' %}" class="link link-primary">Crear uno</a>
-                        </span>
-                    </label>
-                    {% endif %}
+            <!-- Paso 1: Cliente -->
+            <div class="card bg-base-200">
+                <div class="card-body">
+                    <h3 class="card-title text-xl">
+                        <span class="badge badge-primary">1</span>
+                        Seleccionar Cliente
+                    </h3>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-semibold">Cliente *</span>
+                        </label>
+                        <select id="cliente" name="cliente" class="select select-bordered w-full" required>
+                            <option value="" disabled selected>Seleccionar cliente...</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}">
+                                {{ cliente.nombre }} {{ cliente.apellido }} - DNI: {{ cliente.dni }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not clientes %}
+                        <label class="label">
+                            <span class="label-text-alt text-warning">
+                                ⚠️ No hay clientes. <a href="{% url 'cliente_crear' %}" class="link link-primary">Crear uno</a>
+                            </span>
+                        </label>
+                        {% endif %}
+                    </div>
                 </div>
-                
-                <div class="form-control">
+            </div>
+            
+            <!-- Paso 2: Fecha y Duración -->
+            <div class="card bg-base-200">
+                <div class="card-body">
+                    <h3 class="card-title text-xl">
+                        <span class="badge badge-primary">2</span>
+                        Seleccionar Fecha y Duración
+                    </h3>
+                    
+                    <!-- Advertencia inicial -->
+                    <div id="fechaWarning" class="alert alert-warning">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Selecciona el día y la duración de la reserva</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-4">
+                        <!-- Fecha -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Día de la Reserva *</span>
+                            </label>
+                            <input type="date" 
+                                   id="fecha_reserva"
+                                   name="fecha_reserva" 
+                                   value="{% if reserva %}{{ reserva.fecha_hora_inicio|date:'Y-m-d' }}{% endif %}" 
+                                   class="input input-bordered w-full" 
+                                   required>
+                        </div>
+
+                        <!-- Duración -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-semibold">Duración *</span>
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                                <button type="button" class="btn btn-outline duracion-btn" data-duracion="60">
+                                    1 hora
+                                </button>
+                                <button type="button" class="btn btn-outline duracion-btn" data-duracion="90">
+                                    1:30 horas
+                                </button>
+                                <button type="button" class="btn btn-outline duracion-btn" data-duracion="120">
+                                    2 horas
+                                </button>
+                                <button type="button" class="btn btn-outline duracion-btn" data-duracion="custom">
+                                    Personalizado
+                                </button>
+                            </div>
+                            
+                            <!-- Campo personalizado (oculto por defecto) -->
+                            <div id="duracionPersonalizada" class="hidden mt-2">
+                                <label class="label">
+                                    <span class="label-text-alt">Duración en horas (máximo 8 horas)</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <input type="number" 
+                                           id="duracion_horas"
+                                           min="0.5" 
+                                           max="8" 
+                                           step="0.5"
+                                           class="input input-bordered flex-1"
+                                           placeholder="Ej: 3.5">
+                                    <span class="flex items-center px-3 bg-base-300 rounded-lg">horas</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Input hidden para la duración en minutos -->
+                            <input type="hidden" id="duracion_minutos" name="duracion_minutos" value="">
+                        </div>
+
+                        <!-- Hora de inicio (se mostrará después de seleccionar día y duración) -->
+                        <div id="horaInicioSection" class="form-control hidden">
+                            <label class="label">
+                                <span class="label-text font-semibold">Hora de Inicio *</span>
+                            </label>
+                            <select id="hora_inicio" name="hora_inicio" class="select select-bordered w-full">
+                                <option value="">Selecciona una hora...</option>
+                            </select>
+                            <label class="label">
+                                <span class="label-text-alt">Horarios disponibles: 8:00 AM - 10:00 PM</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campos hidden para mantener compatibilidad con el backend -->
+                    <input type="hidden" id="fecha_hora_inicio" name="fecha_hora_inicio">
+                    <input type="hidden" id="fecha_hora_fin" name="fecha_hora_fin">
+                </div>
+            </div>
+            
+            <!-- Paso 3: Cancha (se muestra después de seleccionar fechas) -->
+            <div id="canchasSection" class="card bg-base-200 hidden">
+                <div class="card-body">
+                    <h3 class="card-title text-xl">
+                        <span class="badge badge-primary">3</span>
+                        Seleccionar Cancha
+                    </h3>
                     <label class="label">
                         <span class="label-text font-semibold">Cancha *</span>
+                        <span class="label-text-alt">
+                            <span class="badge badge-success badge-sm">●</span> Disponible
+                            <span class="badge badge-error badge-sm ml-2">●</span> Ocupada
+                        </span>
                     </label>
-                    <select id="cancha" name="cancha" class="select select-bordered w-full" required>
-                        <option value="" disabled selected>Seleccionar cancha...</option>
+                    <div id="canchasContainer" class="space-y-3">
+                        <!-- Las canchas se mostrarán aquí con indicadores de disponibilidad -->
                         {% for cancha in canchas %}
-                        <option value="{{ cancha.id }}">
-                            {{ cancha.nombre }} - ${{ cancha.precio_por_hora }}/hora
-                        </option>
+                        <label class="cancha-option cursor-pointer p-4 border-2 border-base-300 rounded-lg hover:border-primary transition-all block" data-cancha-id="{{ cancha.id }}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <input type="radio" name="cancha" value="{{ cancha.id }}" class="radio radio-primary" required disabled>
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-lg">{{ cancha.nombre }}</div>
+                                        <div class="text-sm text-base-content/60 flex gap-4 mt-1">
+                                            <span>🏟️ {{ cancha.tipo_cancha.nombre }}</span>
+                                            <span>💵 ${{ cancha.precio_por_hora }}/hora</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="availability-indicator">
+                                    <span class="badge badge-ghost">Esperando fechas...</span>
+                                </div>
+                            </div>
+                        </label>
                         {% endfor %}
-                    </select>
+                    </div>
                     {% if not canchas %}
                     <label class="label">
                         <span class="label-text-alt text-warning">
@@ -67,42 +190,6 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-semibold">Fecha y Hora de Inicio *</span>
-                    </label>
-                    <input type="datetime-local" id="fecha_hora_inicio" name="fecha_hora_inicio" 
-                           class="input input-bordered w-full" required>
-                    <label class="label">
-                        <span class="label-text-alt">Horario disponible: 08:00 - 23:00</span>
-                    </label>
-                </div>
-                
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-semibold">Fecha y Hora de Fin *</span>
-                    </label>
-                    <input type="datetime-local" id="fecha_hora_fin" name="fecha_hora_fin" 
-                           class="input input-bordered w-full" required>
-                    <label class="label">
-                        <span class="label-text-alt">Duración: 1 a 4 horas</span>
-                    </label>
-                </div>
-            </div>
-            
-            <div class="form-control">
-                <label class="label">
-                    <span class="label-text font-semibold">Estado *</span>
-                </label>
-                <select id="estado" name="estado" class="select select-bordered w-full" required>
-                    {% for codigo, nombre in estados %}
-                    <option value="{{ codigo }}" {% if not reserva and codigo == 'PENDIENTE' %}selected{% endif %}>
-                        {{ nombre }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
             {% else %}
             <!-- Vista de edición: mostrar info de reserva existente -->
             <div class="alert alert-info shadow-lg">
@@ -145,21 +232,21 @@
                     </span>
                 </label>
                 {% if servicios %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-base-200 rounded-box">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-white border-2 border-gray-200 rounded-box">
                     {% for servicio in servicios %}
-                    <label class="label cursor-pointer justify-start gap-3">
+                    <label class="label cursor-pointer justify-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                         <input type="checkbox" name="servicios" value="{{ servicio.id }}" 
                                class="checkbox checkbox-primary"
                                {% if reserva and servicio in reserva.servicios.all %}checked{% endif %}>
-                        <span class="label-text">
+                        <span class="label-text text-gray-900">
                             <span class="font-semibold">{{ servicio.nombre }}</span>
-                            <span class="text-success ml-2">+${{ servicio.costo_adicional }}</span>
+                            <span class="text-success ml-2 font-bold">+${{ servicio.costo_adicional }}</span>
                         </span>
                     </label>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-sm text-base-content/60 p-4 bg-base-200 rounded-box">
+                <div class="text-sm text-gray-700 p-4 bg-white border-2 border-gray-200 rounded-box">
                     No hay servicios adicionales disponibles.
                 </div>
                 {% endif %}
@@ -225,7 +312,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>No se podrán crear reservas en horarios ya ocupados.</span>
+                <span>Las canchas muestran su disponibilidad en tiempo real al seleccionar fecha y hora.</span>
             </li>
             <li class="flex items-start gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -242,5 +329,260 @@
         </ul>
     </div>
 </div>
+
+<script>
+// Variables globales
+let duracionSeleccionada = 0; // en minutos
+let fechaSeleccionada = null;
+let horaSeleccionada = null;
+
+// Generar horarios disponibles (de 8:00 a 22:00, cada 30 minutos)
+function generarHorariosDisponibles() {
+    const horaInicio = document.getElementById('hora_inicio');
+    horaInicio.innerHTML = '<option value="">Selecciona una hora...</option>';
+    
+    for (let h = 8; h <= 22; h++) {
+        for (let m = 0; m < 60; m += 30) {
+            if (h === 22 && m > 0) break; // Último horario: 22:00
+            
+            const hora = String(h).padStart(2, '0');
+            const minuto = String(m).padStart(2, '0');
+            const horaTexto = `${hora}:${minuto}`;
+            
+            const option = document.createElement('option');
+            option.value = horaTexto;
+            option.textContent = horaTexto;
+            horaInicio.appendChild(option);
+        }
+    }
+}
+
+// Manejar selección de duración
+document.addEventListener('DOMContentLoaded', function() {
+    generarHorariosDisponibles();
+    
+    const duracionBtns = document.querySelectorAll('.duracion-btn');
+    const duracionPersonalizada = document.getElementById('duracionPersonalizada');
+    const duracionHoras = document.getElementById('duracion_horas');
+    const horaInicioSection = document.getElementById('horaInicioSection');
+    const fechaReserva = document.getElementById('fecha_reserva');
+    const horaInicio = document.getElementById('hora_inicio');
+    const fechaWarning = document.getElementById('fechaWarning');
+    
+    // Establecer fecha mínima como hoy
+    const hoy = new Date().toISOString().split('T')[0];
+    fechaReserva.min = hoy;
+    
+    // Botones de duración
+    duracionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remover selección previa
+            duracionBtns.forEach(b => b.classList.remove('btn-primary'));
+            duracionBtns.forEach(b => b.classList.add('btn-outline'));
+            
+            // Marcar como seleccionado
+            this.classList.remove('btn-outline');
+            this.classList.add('btn-primary');
+            
+            const duracion = this.dataset.duracion;
+            
+            if (duracion === 'custom') {
+                duracionPersonalizada.classList.remove('hidden');
+                duracionSeleccionada = 0;
+                document.getElementById('duracion_minutos').value = '';
+            } else {
+                duracionPersonalizada.classList.add('hidden');
+                duracionSeleccionada = parseInt(duracion);
+                document.getElementById('duracion_minutos').value = duracionSeleccionada;
+                verificarYMostrarHorarios();
+            }
+        });
+    });
+    
+    // Duración personalizada
+    duracionHoras.addEventListener('change', function() {
+        const horas = parseFloat(this.value);
+        if (horas > 0 && horas <= 8) {
+            duracionSeleccionada = Math.round(horas * 60);
+            document.getElementById('duracion_minutos').value = duracionSeleccionada;
+            verificarYMostrarHorarios();
+        } else if (horas > 8) {
+            alert('La duración máxima es de 8 horas');
+            this.value = 8;
+            duracionSeleccionada = 480;
+            document.getElementById('duracion_minutos').value = duracionSeleccionada;
+            verificarYMostrarHorarios();
+        }
+    });
+    
+    // Fecha seleccionada
+    fechaReserva.addEventListener('change', function() {
+        fechaSeleccionada = this.value;
+        verificarYMostrarHorarios();
+    });
+    
+    // Hora seleccionada
+    horaInicio.addEventListener('change', function() {
+        horaSeleccionada = this.value;
+        actualizarCamposDateTime();
+        checkAvailability();
+    });
+    
+    // Verificar si mostrar sección de horarios
+    function verificarYMostrarHorarios() {
+        if (fechaSeleccionada && duracionSeleccionada > 0) {
+            fechaWarning.classList.add('hidden');
+            horaInicioSection.classList.remove('hidden');
+        } else {
+            horaInicioSection.classList.add('hidden');
+            document.getElementById('canchasSection').classList.add('hidden');
+        }
+    }
+    
+    // Actualizar campos datetime hidden
+    function actualizarCamposDateTime() {
+        if (fechaSeleccionada && horaSeleccionada && duracionSeleccionada > 0) {
+            const [horas, minutos] = horaSeleccionada.split(':');
+            
+            // Fecha y hora de inicio
+            const inicio = new Date(fechaSeleccionada);
+            inicio.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+            
+            // Fecha y hora de fin
+            const fin = new Date(inicio);
+            fin.setMinutes(fin.getMinutes() + duracionSeleccionada);
+            
+            // Formatear para datetime-local
+            const formatoISO = (fecha) => {
+                const year = fecha.getFullYear();
+                const month = String(fecha.getMonth() + 1).padStart(2, '0');
+                const day = String(fecha.getDate()).padStart(2, '0');
+                const hour = String(fecha.getHours()).padStart(2, '0');
+                const minute = String(fecha.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hour}:${minute}`;
+            };
+            
+            document.getElementById('fecha_hora_inicio').value = formatoISO(inicio);
+            document.getElementById('fecha_hora_fin').value = formatoISO(fin);
+        }
+    }
+});
+
+// Función para verificar disponibilidad de canchas
+async function checkAvailability() {
+    const fechaInicio = document.getElementById('fecha_hora_inicio').value;
+    const fechaFin = document.getElementById('fecha_hora_fin').value;
+    const canchasSection = document.getElementById('canchasSection');
+    const fechaWarning = document.getElementById('fechaWarning');
+    
+    if (!fechaInicio || !fechaFin) {
+        canchasSection.classList.add('hidden');
+        fechaWarning.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Selecciona el día, la duración y la hora de inicio</span>
+        `;
+        fechaWarning.classList.remove('hidden');
+        
+        // Resetear indicadores
+        document.querySelectorAll('.availability-indicator').forEach(indicator => {
+            indicator.innerHTML = '<span class="badge badge-ghost">Esperando horario...</span>';
+        });
+        document.querySelectorAll('.cancha-option input[type="radio"]').forEach(radio => {
+            radio.disabled = true;
+        });
+        return;
+    }
+    
+    // Validar que la fecha de fin sea posterior a la de inicio
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    
+    if (fin <= inicio) {
+        fechaWarning.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>La fecha de fin debe ser posterior a la fecha de inicio</span>
+        `;
+        fechaWarning.classList.remove('hidden');
+        canchasSection.classList.add('hidden');
+        return;
+    }
+    
+    // Ocultar advertencia y mostrar sección de canchas
+    fechaWarning.classList.add('hidden');
+    canchasSection.classList.remove('hidden');
+    
+    // Obtener todas las canchas
+    const canchaOptions = document.querySelectorAll('.cancha-option');
+    
+    // Información de todas las reservas (pasada desde el backend)
+    const reservasExistentes = {{ reservas_json|safe }};
+    
+    let disponiblesCount = 0;
+    let ocupadasCount = 0;
+    
+    canchaOptions.forEach(option => {
+        const canchaId = parseInt(option.dataset.canchaId);
+        const indicator = option.querySelector('.availability-indicator');
+        const radio = option.querySelector('input[type="radio"]');
+        
+        // Verificar si hay conflicto con reservas existentes
+        const tieneConflicto = reservasExistentes.some(reserva => {
+            if (reserva.cancha_id !== canchaId) return false;
+            if (reserva.estado === 'CANCELADA') return false;
+            
+            const reservaInicio = new Date(reserva.fecha_hora_inicio);
+            const reservaFin = new Date(reserva.fecha_hora_fin);
+            const nuevaInicio = new Date(fechaInicio);
+            const nuevaFin = new Date(fechaFin);
+            
+            // Verificar solapamiento
+            return (nuevaInicio < reservaFin && nuevaFin > reservaInicio);
+        });
+        
+        // Actualizar interfaz según disponibilidad
+        if (tieneConflicto) {
+            ocupadasCount++;
+            indicator.innerHTML = '<span class="badge badge-error gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>No Disponible</span>';
+            option.classList.remove('border-base-300', 'border-success', 'bg-success/10');
+            option.classList.add('border-error', 'bg-error/10', 'opacity-60');
+            radio.disabled = true;
+            radio.checked = false;
+        } else {
+            disponiblesCount++;
+            indicator.innerHTML = '<span class="badge badge-success gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Disponible</span>';
+            option.classList.remove('border-base-300', 'border-error', 'bg-error/10', 'opacity-60');
+            option.classList.add('border-success', 'bg-success/10');
+            radio.disabled = false;
+        }
+    });
+    
+    // Mostrar resumen de disponibilidad
+    if (disponiblesCount === 0) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning mt-4';
+        alertDiv.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>No hay canchas disponibles para el horario seleccionado. Por favor, elige otro horario.</span>
+        `;
+        // Agregar solo si no existe
+        const existingAlert = document.querySelector('#canchasContainer + .alert');
+        if (!existingAlert) {
+            document.getElementById('canchasContainer').after(alertDiv);
+        }
+    } else {
+        // Eliminar alerta si existe
+        const existingAlert = document.querySelector('#canchasContainer + .alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+    }
+}
+</script>
 {% endif %}
 {% endblock %}

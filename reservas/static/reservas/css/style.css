@@ -49,6 +49,32 @@
     border-spacing: 0;
     border-radius: 12px;
     overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+/* Tabla compacta estilo GitHub */
+.table-compact {
+    font-size: 0.85rem;
+}
+
+.table-compact th,
+.table-compact td {
+    padding: 0.5rem 0.75rem;
+}
+
+.table-compact .avatar {
+    width: 2rem;
+    height: 2rem;
+}
+
+.table-compact .avatar span {
+    font-size: 0.75rem;
+}
+
+/* Tabla espaciosa */
+.table:not(.table-compact) th,
+.table:not(.table-compact) td {
+    padding: 1rem;
 }
 
 .table th {
@@ -56,20 +82,152 @@
     color: var(--corp-slate);
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     letter-spacing: 0.05em;
-    padding: 1rem 0.75rem;
-    border-bottom: 2px solid var(--corp-navy-dark);
+    padding: 0.75rem;
+    border-bottom: 2px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .table td {
-    padding: 1rem 0.75rem;
+    padding: 0.75rem;
     border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: all 0.15s ease;
 }
 
 .table tbody tr:hover {
     background-color: var(--gray-50);
-    transition: background-color 0.2s ease;
+    transform: scale(1.001);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Mejoras para búsqueda y filtros */
+.input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group span {
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    border: 2px solid var(--gray-300);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    background-color: var(--gray-100);
+}
+
+.input-group .input {
+    border-radius: 0 10px 10px 0;
+    border-left: none;
+}
+
+.input-group .input:focus {
+    border-color: var(--corp-navy-dark);
+}
+
+.input-group:focus-within span {
+    border-color: var(--corp-navy-dark);
+    background-color: var(--gray-50);
+}
+
+/* Botones de acción en tabla más sutiles */
+.table .btn-xs {
+    padding: 0.25rem 0.5rem;
+    min-height: 1.75rem;
+    height: 1.75rem;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.table tr:hover .btn-xs {
+    opacity: 1;
+}
+
+.table .btn-xs:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+/* Animación para el toggle de densidad */
+.table-compact {
+    animation: compactTransition 0.2s ease;
+}
+
+@keyframes compactTransition {
+    from {
+        font-size: 0.9rem;
+    }
+    to {
+        font-size: 0.85rem;
+    }
+}
+
+/* Mejoras para badges en tabla */
+.table .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: 600;
+}
+
+.table-compact .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Avatar en tabla */
+.table .avatar {
+    flex-shrink: 0;
+}
+
+/* Contador de resultados */
+.text-base-content\/60 {
+    opacity: 0.6;
+}
+
+.text-base-content\/40 {
+    opacity: 0.4;
+}
+
+/* Efecto de loading para búsqueda */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.searching {
+    animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive mejorado para tabla */
+@media (max-width: 640px) {
+    .table {
+        font-size: 0.8rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .table .avatar {
+        width: 2rem;
+        height: 2rem;
+    }
 }
 
 /* Cards con bordes redondeados estilo Next.js */
@@ -686,7 +844,6 @@ main {
 /* Footer */
 .footer {
     background-color: var(--dark-color);
-    color: var(--white);
     text-align: center;
     padding: 2rem 0;
     margin-top: 3rem;

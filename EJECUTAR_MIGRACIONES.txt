@@ -1,5 +1,0 @@
-# Comando para crear las migraciones
-python manage.py makemigrations
-
-# Comando para aplicar las migraciones
-python manage.py migrate

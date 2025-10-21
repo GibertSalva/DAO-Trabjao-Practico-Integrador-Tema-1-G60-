@@ -3,6 +3,16 @@
 {% block title %}Detalle de Reserva - Sistema de Reservas{% endblock %}
 
 {% block content %}
+<script>
+// Forzar recarga cuando se vuelve a esta página desde el botón atrás
+window.addEventListener('pageshow', function(event) {
+    // Si la página viene del caché (back/forward)
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        window.location.reload();
+    }
+});
+</script>
+
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <div class="flex justify-between items-center mb-6">
@@ -30,12 +40,12 @@
         
         <!-- Estado de la Reserva -->
         <div class="text-center mb-6">
-            {% if reserva.estado == 'CONFIRMADA' %}
+            {% if reserva.estado == 'PAGADA' %}
                 <div class="badge badge-success badge-lg gap-2 text-lg p-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    RESERVA CONFIRMADA
+                    RESERVA PAGADA
                 </div>
             {% elif reserva.estado == 'PENDIENTE' %}
                 <div class="badge badge-warning badge-lg gap-2 text-lg p-6">
@@ -81,7 +91,7 @@
                         <div class="font-semibold">{{ reserva.cliente.telefono }}</div>
                     </div>
                 </div>
-                <a href="{% url 'cliente_detalle' reserva.cliente.id %}" class="btn btn-sm btn-ghost gap-2 mt-3">
+                <a href="{% url 'cliente_detalle' reserva.cliente.id %}" class="btn btn-sm btn-primary gap-2 mt-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -114,7 +124,7 @@
                         <div class="font-semibold text-success text-lg">${{ reserva.cancha.precio_por_hora }}</div>
                     </div>
                 </div>
-                <a href="{% url 'cancha_detalle' reserva.cancha.id %}" class="btn btn-sm btn-ghost gap-2 mt-3">
+                <a href="{% url 'cancha_detalle' reserva.cancha.id %}" class="btn btn-sm btn-success gap-2 mt-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -200,9 +210,9 @@
         
         <!-- Información de Pago -->
         {% if reserva.pago %}
-        <div class="card bg-gradient-to-br from-red-50 to-red-100 shadow-md">
+        <div class="card {% if reserva.estado == 'PAGADA' %}bg-gradient-to-br from-green-50 to-green-100{% elif reserva.estado == 'PENDIENTE' %}bg-gradient-to-br from-yellow-50 to-yellow-100{% else %}bg-gradient-to-br from-red-50 to-red-100{% endif %} shadow-md">
             <div class="card-body">
-                <h3 class="card-title mb-4">
+                <h3 class="card-title mb-4 text-gray-900">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -214,27 +224,27 @@
                         <div class="stat-value text-success text-3xl">${{ reserva.pago.monto_total }}</div>
                     </div>
                     <div class="stat bg-white rounded-box shadow">
-                        <div class="stat-title">Estado</div>
+                        <div class="stat-title">Estado del Pago</div>
                         <div class="stat-value text-xl">
-                            {% if reserva.pago.estado == 'PAGADO' %}
+                            {% if reserva.estado == 'PAGADA' %}
                                 <span class="badge badge-success badge-lg">Pagado</span>
-                            {% elif reserva.pago.estado == 'PENDIENTE' %}
+                            {% elif reserva.estado == 'PENDIENTE' %}
                                 <span class="badge badge-warning badge-lg">Pendiente</span>
                             {% else %}
-                                <span class="badge badge-info badge-lg">Reembolsado</span>
+                                <span class="badge badge-error badge-lg">Cancelado</span>
                             {% endif %}
                         </div>
                     </div>
                     {% if reserva.pago.metodo_pago %}
                     <div class="stat bg-white rounded-box shadow">
                         <div class="stat-title">Método</div>
-                        <div class="stat-value text-xl">{{ reserva.pago.get_metodo_pago_display }}</div>
+                        <div class="stat-value text-xl text-gray-900">{{ reserva.pago.get_metodo_pago_display }}</div>
                     </div>
                     {% endif %}
-                    {% if reserva.pago.fecha_pago %}
+                    {% if reserva.estado == 'PAGADA' and reserva.pago.fecha_pago %}
                     <div class="stat bg-white rounded-box shadow">
                         <div class="stat-title">Fecha de Pago</div>
-                        <div class="stat-value text-sm">{{ reserva.pago.fecha_pago|date:"d/m/Y H:i" }}</div>
+                        <div class="stat-value text-sm text-gray-900">{{ reserva.pago.fecha_pago|date:"d/m/Y H:i" }}</div>
                     </div>
                     {% endif %}
                 </div>

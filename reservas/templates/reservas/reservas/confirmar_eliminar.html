@@ -70,8 +70,8 @@
                 <div class="stat bg-gradient-to-br from-gray-50 to-gray-100 rounded-box shadow">
                     <div class="stat-title">Estado Actual</div>
                     <div class="stat-value text-lg">
-                        {% if reserva.estado == 'CONFIRMADA' %}
-                            <span class="badge badge-success badge-lg">Confirmada</span>
+                        {% if reserva.estado == 'PAGADA' %}
+                            <span class="badge badge-success badge-lg">Pagada</span>
                         {% elif reserva.estado == 'PENDIENTE' %}
                             <span class="badge badge-warning badge-lg">Pendiente</span>
                         {% else %}

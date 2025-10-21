@@ -5,8 +5,12 @@
 {% block content %}
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h2 class="card-title text-3xl">👥 Clientes Registrados</h2>
+        <!-- Header con título y acciones -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div class="flex items-center gap-3">
+                <h2 class="card-title text-3xl">👥 Clientes</h2>
+                <span class="badge badge-lg badge-primary">{{ clientes|length }} total</span>
+            </div>
             <a href="{% url 'cliente_crear' %}" class="btn btn-primary gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -14,72 +18,132 @@
                 Nuevo Cliente
             </a>
         </div>
-        
+
+        <!-- Barra de búsqueda y filtros -->
         {% if clientes %}
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <div class="form-control flex-1">
+                <div class="input-group">
+                    <span class="bg-base-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Buscar por nombre, DNI, email o teléfono..." 
+                        class="input input-bordered w-full" 
+                    />
+                </div>
+            </div>
+            <button id="clearSearch" class="btn btn-ghost btn-sm hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpiar
+            </button>
+        </div>
+
+        <!-- Contador de resultados -->
+        <div class="flex justify-between items-center mb-3">
+            <span class="text-sm text-base-content/60">
+                Mostrando <span id="showingCount">{{ clientes|length }}</span> de <span id="totalCount">{{ clientes|length }}</span> clientes
+            </span>
+            <div class="flex gap-2">
+                <button class="btn btn-xs btn-ghost sort-btn" data-sort="nombre">
+                    Nombre
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                </button>
+                <button class="btn btn-xs btn-ghost sort-btn" data-sort="dni">
+                    DNI
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tabla con densidad variable -->
         <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table id="clientesTable" class="table w-full table-compact">
                 <thead>
-                    <tr>
-                        <th class="bg-primary text-primary-content">ID</th>
-                        <th class="bg-primary text-primary-content">Nombre Completo</th>
-                        <th class="bg-primary text-primary-content">DNI</th>
-                        <th class="bg-primary text-primary-content">Email</th>
-                        <th class="bg-primary text-primary-content">Teléfono</th>
-                        <th class="bg-primary text-primary-content">Acciones</th>
+                    <tr class="bg-base-200">
+                        <th class="w-12">#</th>
+                        <th>Cliente</th>
+                        <th class="hidden sm:table-cell">DNI</th>
+                        <th class="hidden md:table-cell">Email</th>
+                        <th class="hidden lg:table-cell">Teléfono</th>
+                        <th class="hidden xl:table-cell">Registrado</th>
+                        <th class="w-24 text-right">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="clientesTableBody">
                     {% for cliente in clientes %}
-                    <tr class="hover">
-                        <td class="font-bold">{{ cliente.id }}</td>
+                    <tr class="hover border-b border-base-200 client-row" 
+                        data-nombre="{{ cliente.nombre|lower }} {{ cliente.apellido|lower }}"
+                        data-dni="{{ cliente.dni }}"
+                        data-email="{{ cliente.email|lower }}"
+                        data-telefono="{{ cliente.telefono }}">
+                        <td class="font-mono text-xs text-base-content/60">{{ cliente.id }}</td>
                         <td>
-                            <div class="flex items-center space-x-3">
+                            <div class="flex items-center gap-3">
                                 <div class="avatar placeholder">
-                                    <div class="bg-primary text-primary-content rounded-full w-8">
-                                        <span class="text-xs">{{ cliente.nombre.0 }}{{ cliente.apellido.0 }}</span>
+                                    <div class="bg-primary text-primary-content rounded-lg w-10 h-10">
+                                        <span class="text-sm font-semibold">{{ cliente.nombre.0 }}{{ cliente.apellido.0 }}</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <div class="font-bold">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-base truncate">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+                                    <div class="text-sm text-base-content/60 sm:hidden truncate">{{ cliente.email }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td>
-                            <span class="badge badge-ghost">{{ cliente.dni }}</span>
+                        <td class="hidden sm:table-cell">
+                            <span class="badge badge-ghost badge-sm font-mono">{{ cliente.dni }}</span>
                         </td>
-                        <td>{{ cliente.email }}</td>
-                        <td>{{ cliente.telefono }}</td>
+                        <td class="hidden md:table-cell">
+                            <div class="text-sm truncate max-w-xs" title="{{ cliente.email }}">{{ cliente.email }}</div>
+                        </td>
+                        <td class="hidden lg:table-cell">
+                            <span class="font-mono text-sm">{{ cliente.telefono }}</span>
+                        </td>
+                        <td class="hidden xl:table-cell">
+                            <span class="text-xs text-base-content/60">{{ cliente.fecha_registro|date:"d/m/Y" }}</span>
+                        </td>
                         <td>
                             <div class="dropdown dropdown-end">
-                                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                <label tabindex="0" class="btn btn-ghost btn-sm" style="color: #1e3a8a !important;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
                                     </svg>
                                 </label>
-                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                                <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-box w-52 border-2 border-gray-200 z-50">
                                     <li>
-                                        <a href="{% url 'cliente_detalle' cliente.id %}" class="text-info">
+                                        <a href="{% url 'cliente_detalle' cliente.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
-                                            Ver Detalles
+                                            Ver detalles
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'cliente_editar' cliente.id %}" class="text-warning">
+                                        <a href="{% url 'cliente_editar' cliente.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
-                                            Editar Cliente
+                                            Editar
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'cliente_eliminar' cliente.id %}" class="text-error">
+                                        <a href="{% url 'cliente_eliminar' cliente.id %}" class="gap-2 text-error hover:bg-red-50">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
-                                            Eliminar Cliente
+                                            Eliminar
                                         </a>
                                     </li>
                                 </ul>
@@ -90,6 +154,44 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Paginación -->
+        {% if clientes.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <div class="btn-group">
+                {% if clientes.has_previous %}
+                    <a href="?page=1" class="btn btn-sm">«</a>
+                    <a href="?page={{ clientes.previous_page_number }}" class="btn btn-sm">‹</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">«</button>
+                    <button class="btn btn-sm btn-disabled">‹</button>
+                {% endif %}
+                
+                <button class="btn btn-sm btn-active">Página {{ clientes.number }} de {{ clientes.paginator.num_pages }}</button>
+                
+                {% if clientes.has_next %}
+                    <a href="?page={{ clientes.next_page_number }}" class="btn btn-sm">›</a>
+                    <a href="?page={{ clientes.paginator.num_pages }}" class="btn btn-sm">»</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">›</button>
+                    <button class="btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-center mt-2 text-sm text-base-content/60">
+            Mostrando {{ clientes.start_index }} - {{ clientes.end_index }} de {{ clientes.paginator.count }} clientes
+        </div>
+        {% endif %}
+
+        <!-- Sin resultados de búsqueda -->
+        <div id="noResults" class="text-center py-12 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p class="text-lg text-base-content/60">No se encontraron clientes</p>
+            <p class="text-sm text-base-content/40">Intenta con otros términos de búsqueda</p>
+        </div>
+
         {% else %}
         <div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,4 +203,97 @@
         {% endif %}
     </div>
 </div>
+
+<!-- JavaScript para funcionalidad interactiva -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const clientesTable = document.getElementById('clientesTable');
+    const clientRows = document.querySelectorAll('.client-row');
+    const noResults = document.getElementById('noResults');
+    const showingCount = document.getElementById('showingCount');
+    const totalCount = document.getElementById('totalCount');
+    const tableBody = document.getElementById('clientesTableBody');
+
+    // Búsqueda en tiempo real
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            if (searchTerm.length > 0) {
+                clearSearch.classList.remove('hidden');
+            } else {
+                clearSearch.classList.add('hidden');
+            }
+
+            clientRows.forEach(row => {
+                const nombre = row.dataset.nombre || '';
+                const dni = row.dataset.dni || '';
+                const email = row.dataset.email || '';
+                const telefono = row.dataset.telefono || '';
+
+                const matches = nombre.includes(searchTerm) || 
+                              dni.includes(searchTerm) || 
+                              email.includes(searchTerm) || 
+                              telefono.includes(searchTerm);
+
+                if (matches) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Actualizar contador
+            showingCount.textContent = visibleCount;
+
+            // Mostrar/ocultar mensaje de sin resultados
+            if (visibleCount === 0) {
+                noResults.classList.remove('hidden');
+                clientesTable.classList.add('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                clientesTable.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Limpiar búsqueda
+    if (clearSearch) {
+        clearSearch.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+    }
+
+    // Sorting simple
+    const sortButtons = document.querySelectorAll('.sort-btn');
+    let sortAscending = true;
+    
+    sortButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const sortBy = this.dataset.sort;
+            sortAscending = !sortAscending;
+            
+            const rowsArray = Array.from(clientRows);
+            rowsArray.sort((a, b) => {
+                let aVal = a.dataset[sortBy] || '';
+                let bVal = b.dataset[sortBy] || '';
+                
+                if (sortAscending) {
+                    return aVal.localeCompare(bVal);
+                } else {
+                    return bVal.localeCompare(aVal);
+                }
+            });
+            
+            rowsArray.forEach(row => tableBody.appendChild(row));
+        });
+    });
+});
+</script>
 {% endblock %}

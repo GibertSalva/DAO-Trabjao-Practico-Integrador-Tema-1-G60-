@@ -3,14 +3,26 @@
 {% block title %}Reservas - Sistema de Reservas{% endblock %}
 
 {% block content %}
+<script>
+// Forzar recarga cuando se vuelve a esta página desde el botón atrás
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        window.location.reload();
+    }
+});
+</script>
+
 <!-- Encabezado y botón de nueva reserva -->
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-    <h2 class="text-3xl font-bold flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        Gestión de Reservas
-    </h2>
+    <div class="flex items-center gap-3">
+        <h2 class="text-3xl font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Reservas
+        </h2>
+        <span class="badge badge-lg badge-primary">{{ reservas|length }}</span>
+    </div>
     <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -96,116 +108,124 @@
     <div class="card-body">
         {% if reservas %}
         <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table id="reservasTable" class="table w-full table-compact">
                 <thead>
-                    <tr>
-                        <th class="bg-primary text-primary-content">ID</th>
-                        <th class="bg-primary text-primary-content">Cliente</th>
-                        <th class="bg-primary text-primary-content">Cancha</th>
-                        <th class="bg-primary text-primary-content">Inicio</th>
-                        <th class="bg-primary text-primary-content">Fin</th>
-                        <th class="bg-primary text-primary-content">Valor</th>
-                        <th class="bg-primary text-primary-content">Estado</th>
-                        <th class="bg-primary text-primary-content">Acciones</th>
+                    <tr class="bg-base-200">
+                        <th class="w-12">#</th>
+                        <th>Cliente</th>
+                        <th class="hidden sm:table-cell">Cancha</th>
+                        <th class="hidden md:table-cell">Fecha</th>
+                        <th class="hidden lg:table-cell">Horario</th>
+                        <th class="hidden xl:table-cell">Monto</th>
+                        <th>Estado</th>
+                        <th class="w-24 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for reserva in reservas %}
-                    <tr class="hover">
-                        <td class="font-bold">{{ reserva.id }}</td>
+                    <tr class="hover border-b border-base-200">
+                        <td class="font-mono text-xs text-base-content/60">{{ reserva.id }}</td>
                         <td>
                             <div class="flex items-center gap-2">
                                 <div class="avatar placeholder">
-                                    <div class="bg-primary text-primary-content rounded-full w-8">
-                                        <span class="text-xs">{{ reserva.cliente.nombre.0 }}{{ reserva.cliente.apellido.0 }}</span>
+                                    <div class="bg-primary text-primary-content rounded-lg w-10 h-10">
+                                        <span class="text-sm font-semibold">{{ reserva.cliente.nombre.0 }}{{ reserva.cliente.apellido.0 }}</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <div class="font-semibold">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
-                                    <div class="text-sm opacity-50">{{ reserva.cliente.dni }}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-base truncate">{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</div>
+                                    <div class="text-sm text-base-content/60 sm:hidden truncate">{{ reserva.cancha.nombre }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td class="hidden sm:table-cell">
                             <div class="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                 </svg>
-                                <span class="font-semibold">{{ reserva.cancha.nombre }}</span>
+                                <span class="font-medium">{{ reserva.cancha.nombre }}</span>
                             </div>
                         </td>
-                        <td>
+                        <td class="hidden md:table-cell">
                             <div class="flex flex-col">
                                 <span class="font-semibold">{{ reserva.fecha_hora_inicio|date:"d/m/Y" }}</span>
-                                <span class="text-sm opacity-70">{{ reserva.fecha_hora_inicio|date:"H:i" }} hs</span>
+                                <span class="text-xs text-base-content/60 md:hidden lg:block">{{ reserva.fecha_hora_inicio|date:"l" }}</span>
                             </div>
                         </td>
-                        <td>
-                            <div class="flex flex-col">
-                                <span class="font-semibold">{{ reserva.fecha_hora_fin|date:"d/m/Y" }}</span>
-                                <span class="text-sm opacity-70">{{ reserva.fecha_hora_fin|date:"H:i" }} hs</span>
-                            </div>
+                        <td class="hidden lg:table-cell">
+                            <span class="font-mono text-sm">{{ reserva.fecha_hora_inicio|date:"H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}</span>
+                        </td>
+                        <td class="hidden xl:table-cell">
+                            <span class="text-success font-bold">${{ reserva.calcular_costo_total|floatformat:0 }}</span>
                         </td>
                         <td>
-                            <div class="flex flex-col">
-                                <span class="text-success font-bold">${{ reserva.calcular_costo_total|floatformat:2 }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            {% if reserva.estado == 'CONFIRMADA' %}
-                                <span class="badge badge-success gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            {% if reserva.estado == 'PAGADA' %}
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    Confirmada
+                                    <span class="hidden lg:inline">Pagada</span>
                                 </span>
                             {% elif reserva.estado == 'PENDIENTE' %}
-                                <span class="badge badge-warning gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <span class="badge badge-warning badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    Pendiente
+                                    <span class="hidden lg:inline">Pendiente</span>
                                 </span>
                             {% else %}
-                                <span class="badge badge-error gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <span class="badge badge-error badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    Cancelada
+                                    <span class="hidden lg:inline">Cancelada</span>
                                 </span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="dropdown dropdown-end">
-                                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                <label tabindex="0" class="btn btn-ghost btn-sm" style="color: #1e3a8a !important;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
                                     </svg>
                                 </label>
-                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                                <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-box w-52 border-2 border-gray-200 z-50">
                                     <li>
-                                        <a href="{% url 'reserva_detalle' reserva.id %}" class="text-info">
+                                        <a href="{% url 'reserva_detalle' reserva.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
-                                            Ver Detalles
+                                            Ver detalles
                                         </a>
                                     </li>
+                                    {% if reserva.estado == 'PENDIENTE' %}
                                     <li>
-                                        <a href="{% url 'reserva_editar' reserva.id %}" class="text-warning">
+                                        <form method="POST" action="{% url 'reserva_marcar_pagada' reserva.id %}" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="gap-2 text-green-700 hover:bg-green-50 w-full text-left">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Marcar como pagada
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <a href="{% url 'reserva_editar' reserva.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
-                                            Editar Reserva
+                                            Editar
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'reserva_eliminar' reserva.id %}" class="text-error">
+                                        <a href="{% url 'reserva_eliminar' reserva.id %}" class="gap-2 text-error hover:bg-red-50">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                             </svg>
-                                            Cancelar Reserva
+                                            Cancelar
                                         </a>
                                     </li>
                                 </ul>
@@ -216,6 +236,35 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Paginación -->
+        {% if reservas.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <div class="btn-group">
+                {% if reservas.has_previous %}
+                    <a href="?page=1{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.cancha %}&cancha={{ request.GET.cancha }}{% endif %}" class="btn btn-sm">«</a>
+                    <a href="?page={{ reservas.previous_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.cancha %}&cancha={{ request.GET.cancha }}{% endif %}" class="btn btn-sm">‹</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">«</button>
+                    <button class="btn btn-sm btn-disabled">‹</button>
+                {% endif %}
+                
+                <button class="btn btn-sm btn-active">Página {{ reservas.number }} de {{ reservas.paginator.num_pages }}</button>
+                
+                {% if reservas.has_next %}
+                    <a href="?page={{ reservas.next_page_number }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.cancha %}&cancha={{ request.GET.cancha }}{% endif %}" class="btn btn-sm">›</a>
+                    <a href="?page={{ reservas.paginator.num_pages }}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.cliente %}&cliente={{ request.GET.cliente }}{% endif %}{% if request.GET.cancha %}&cancha={{ request.GET.cancha }}{% endif %}" class="btn btn-sm">»</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">›</button>
+                    <button class="btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-center mt-2 text-sm text-base-content/60">
+            Mostrando {{ reservas.start_index }} - {{ reservas.end_index }} de {{ reservas.paginator.count }} reservas
+        </div>
+        {% endif %}
+        
         {% else %}
         <div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -233,4 +282,11 @@
         {% endif %}
     </div>
 </div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Puedes agregar funcionalidad JavaScript aquí si es necesario
+});
+</script>
 {% endblock %}

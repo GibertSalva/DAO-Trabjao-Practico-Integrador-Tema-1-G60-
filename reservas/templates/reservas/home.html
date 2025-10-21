@@ -6,80 +6,67 @@
 
 {% block content %}
 <!-- Hero Section -->
-<div class="hero bg-gradient-to-r from-primary to-secondary rounded-lg shadow-xl mb-8">
-    <div class="hero-content text-center text-primary-content py-12">
-        <div class="max-w-md">
-            <h1 class="text-4xl font-bold mb-4"> -  Reservas Deportivas - </h1>
-            <p class="text-m opacity-90">Gestión de clientes, canchas y reservas de manera sencilla y eficiente</p>
-        </div>
+<div class="card mb-8">
+    <div class="card-body text-center py-12">
+        <h1 class="text-4xl font-bold mb-4 tracking-tight">Reservas Deportivas</h1>
+        <p class="text-sm" style="color: var(--color-gray-500);">Gestión de clientes, canchas y reservas de manera sencilla y eficiente</p>
     </div>
 </div>
 
 <!-- Estadísticas -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-
-    <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-        <div class="card-body flex flex-row justify-between items-center p-6">
-            <div class="stat-title text-white font-semibold text-base">Clientes Registrados:</div>
-            <div class="stat-value text-white  text-base l font-bold">{{ total_clientes }}</div>
-        </div>
+    <div class="stat">
+        <div class="stat-title">Clientes</div>
+        <div class="stat-value">{{ total_clientes }}</div>
     </div>
 
-    <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
-        <div class="card-body flex flex-row justify-between items-center p-6">
-            <div class="stat-title text-white font-semibold text-base">Canchas Disponibles:</div>
-            <div class="stat-value text-white  text-base  font-bold">{{ total_canchas }}</div>
-        </div>
+    <div class="stat">
+        <div class="stat-title">Canchas</div>
+        <div class="stat-value">{{ total_canchas }}</div>
     </div>
 
-    <div class="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-lg">
-        <div class="card-body flex flex-row justify-between items-center p-6">
-            <div class="stat-title text-white font-semibold text-base">🏆 Torneos Vigentes:</div>
-            <div class="stat-value text-white  text-base font-bold">{{ torneos_vigentes }}</div>
-        </div>
+    <div class="stat">
+        <div class="stat-title">Torneos</div>
+        <div class="stat-value">{{ torneos_vigentes }}</div>
     </div>
 
-    <div class="card bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg">
-        <div class="card-body flex flex-row justify-between items-center p-6">
-            <div class="stat-title text-white font-semibold text-base">Reservas Pendientes:</div>
-            <div class="stat-value text-white text-base font-bold">{{ reservas_pendientes }}</div>
-        </div>
+    <div class="stat">
+        <div class="stat-title">Pendientes</div>
+        <div class="stat-value">{{ reservas_pendientes }}</div>
     </div>
 
-    <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg">
-        <div class="card-body flex flex-row justify-between items-center p-6">
-            <div class="stat-title text-white font-semibold text-base">Reservas Confirmadas:</div>
-            <div class="stat-value text-white  text-base  font-bold">{{ reservas_activas }}</div>
-        </div>
+    <div class="stat">
+        <div class="stat-title">Pagadas</div>
+        <div class="stat-value">{{ reservas_activas }}</div>
     </div>
 </div>
 
 <!-- Acciones Rápidas -->
-<div class="card bg-base-100 shadow-xl max-w-full">
+<div class="card">
     <div class="card-body">
-        <h2 class="card-title text-2xl mb-6 justify-center">Acciones Rápidas</h2>
+        <h2 class="text-xl font-semibold mb-6 text-center tracking-tight">Acciones Rápidas</h2>
         <div class="flex flex-wrap justify-center gap-4">
-            <a href="{% url 'reserva_crear' %}" class="btn btn-primary gap-2 w-auto px-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <a href="{% url 'reserva_crear' %}" class="btn btn-outline gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Nueva Reserva
             </a>
-            <a href="{% url 'cliente_crear' %}" class="btn btn-success gap-2 w-auto px-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            <a href="{% url 'cliente_crear' %}" class="btn btn-outline gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 Registrar Cliente
             </a>
-            <a href="{% url 'cancha_crear' %}" class="btn btn-warning gap-2 w-auto px-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <a href="{% url 'cancha_crear' %}" class="btn btn-outline gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Agregar Cancha
             </a>
-            <a href="{% url 'reserva_lista' %}" class="btn btn-info gap-2 w-auto px-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <a href="{% url 'reserva_lista' %}" class="btn btn-outline gap-2 w-auto px-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 Ver Reservas
             </a>

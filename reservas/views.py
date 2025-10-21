@@ -2,10 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q, Count, Sum, Avg
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import Cliente, Cancha, TipoCancha, Reserva, Servicio, Torneo, Pago
+from .models import Cliente, Cancha, TipoCancha, Reserva, Servicio, Torneo, Pago, Equipo, Partido
 
 # Aca creamos las vistas para la app 'reservas'
 
@@ -20,7 +21,7 @@ def home(request):
     context = {
         'total_clientes': Cliente.objects.count(),
         'total_canchas': Cancha.objects.count(),
-        'reservas_activas': Reserva.objects.filter(estado='CONFIRMADA').count(),
+        'reservas_activas': Reserva.objects.filter(estado='PAGADA').count(),
         'reservas_pendientes': Reserva.objects.filter(estado='PENDIENTE').count(),
         'torneos_vigentes': torneos_vigentes,
     }
@@ -29,8 +30,20 @@ def home(request):
 # ========== VISTAS DE CLIENTES ==========
 
 def cliente_lista(request):
-    """Listar todos los clientes"""
-    clientes = Cliente.objects.all().order_by('id')
+    """Listar todos los clientes con paginación"""
+    clientes_list = Cliente.objects.all().order_by('id')
+    
+    # Paginación: 10 clientes por página
+    paginator = Paginator(clientes_list, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        clientes = paginator.page(page)
+    except PageNotAnInteger:
+        clientes = paginator.page(1)
+    except EmptyPage:
+        clientes = paginator.page(paginator.num_pages)
+    
     return render(request, 'reservas/clientes/lista.html', {'clientes': clientes})
 
 def cliente_crear(request):
@@ -118,9 +131,21 @@ def cliente_detalle(request, pk):
 # ========== VISTAS DE CANCHAS ==========
 
 def cancha_lista(request):
-    """Listar todas las canchas"""
-    canchas = Cancha.objects.all().select_related('tipo_cancha').order_by('id')
+    """Listar todas las canchas con paginación"""
+    canchas_list = Cancha.objects.all().select_related('tipo_cancha').order_by('id')
     tipos_cancha = TipoCancha.objects.all()
+    
+    # Paginación: 10 canchas por página
+    paginator = Paginator(canchas_list, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        canchas = paginator.page(page)
+    except PageNotAnInteger:
+        canchas = paginator.page(1)
+    except EmptyPage:
+        canchas = paginator.page(paginator.num_pages)
+    
     return render(request, 'reservas/canchas/lista.html', {
         'canchas': canchas,
         'tipos_cancha': tipos_cancha
@@ -190,31 +215,47 @@ def cancha_detalle(request, pk):
 # ========== VISTAS DE RESERVAS ==========
 
 def reserva_lista(request):
-    """Listar todas las reservas con filtros opcionales"""
-    reservas = Reserva.objects.all().select_related('cliente', 'cancha', 'torneo').order_by('-id')
+    """Listar todas las reservas con filtros opcionales y paginación"""
+    reservas_list = Reserva.objects.all().select_related('cliente', 'cancha', 'torneo').order_by('-id')
     
     # Filtros
     estado = request.GET.get('estado')
     if estado:
-        reservas = reservas.filter(estado=estado)
+        reservas_list = reservas_list.filter(estado=estado)
     
     cliente_id = request.GET.get('cliente')
     if cliente_id:
-        reservas = reservas.filter(cliente_id=cliente_id)
+        reservas_list = reservas_list.filter(cliente_id=cliente_id)
     
     cancha_id = request.GET.get('cancha')
     if cancha_id:
-        reservas = reservas.filter(cancha_id=cancha_id)
+        reservas_list = reservas_list.filter(cancha_id=cancha_id)
+    
+    # Paginación: 15 reservas por página
+    paginator = Paginator(reservas_list, 15)
+    page = request.GET.get('page', 1)
+    
+    try:
+        reservas = paginator.page(page)
+    except PageNotAnInteger:
+        reservas = paginator.page(1)
+    except EmptyPage:
+        reservas = paginator.page(paginator.num_pages)
     
     clientes = Cliente.objects.all().order_by('id')
     canchas = Cancha.objects.all().order_by('id')
     
-    return render(request, 'reservas/reservas/lista.html', {
+    response = render(request, 'reservas/reservas/lista.html', {
         'reservas': reservas,
         'clientes': clientes,
         'canchas': canchas,
         'estados': Reserva.ESTADO_CHOICES
     })
+    # Agregar headers para evitar caché
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 def reserva_crear(request):
     """Crear una nueva reserva con validación de disponibilidad"""
@@ -235,7 +276,7 @@ def reserva_crear(request):
             # Validar disponibilidad de la cancha
             reservas_conflicto = Reserva.objects.filter(
                 cancha=cancha,
-                estado__in=['PENDIENTE', 'CONFIRMADA']
+                estado__in=['PENDIENTE', 'PAGADA']
             ).filter(
                 Q(fecha_hora_inicio__lt=fecha_fin) & Q(fecha_hora_fin__gt=fecha_inicio)
             )
@@ -283,6 +324,23 @@ def reserva_crear(request):
         except Exception as e:
             messages.error(request, f'Error al crear reserva: {str(e)}')
     
+    # Obtener todas las reservas activas para verificar disponibilidad
+    import json
+    from django.utils.dateformat import format as date_format
+    
+    reservas_activas = Reserva.objects.filter(
+        estado__in=['PENDIENTE', 'PAGADA']
+    ).values('id', 'cancha_id', 'fecha_hora_inicio', 'fecha_hora_fin', 'estado')
+    
+    # Convertir a formato JSON para JavaScript
+    reservas_json = json.dumps([{
+        'id': r['id'],
+        'cancha_id': r['cancha_id'],
+        'fecha_hora_inicio': r['fecha_hora_inicio'].isoformat(),
+        'fecha_hora_fin': r['fecha_hora_fin'].isoformat(),
+        'estado': r['estado']
+    } for r in reservas_activas])
+    
     clientes = Cliente.objects.all().order_by('apellido', 'nombre')
     canchas = Cancha.objects.all().order_by('nombre')
     servicios = Servicio.objects.all()
@@ -293,7 +351,8 @@ def reserva_crear(request):
         'canchas': canchas,
         'servicios': servicios,
         'torneos': torneos,
-        'estados': Reserva.ESTADO_CHOICES
+        'estados': Reserva.ESTADO_CHOICES,
+        'reservas_json': reservas_json
     })
 
 def reserva_editar(request, pk):
@@ -302,7 +361,9 @@ def reserva_editar(request, pk):
     
     if request.method == 'POST':
         try:
-            reserva.estado = request.POST['estado']
+            estado_anterior = reserva.estado
+            estado_nuevo = request.POST['estado']
+            reserva.estado = estado_nuevo
             
             # Actualizar servicios
             servicios_ids = request.POST.getlist('servicios')
@@ -317,16 +378,37 @@ def reserva_editar(request, pk):
             
             reserva.save()
             
-            # Recalcular monto del pago
+            # Recalcular monto del pago y sincronizar estado
             if hasattr(reserva, 'pago'):
                 horas = (reserva.fecha_hora_fin - reserva.fecha_hora_inicio).total_seconds() / 3600
                 monto_cancha = float(reserva.cancha.precio_por_hora) * horas
                 monto_servicios = sum(float(s.costo_adicional) for s in reserva.servicios.all())
                 reserva.pago.monto_total = monto_cancha + monto_servicios
+                
+                # Sincronizar estado del pago con estado de la reserva
+                if estado_nuevo == 'PAGADA' and estado_anterior != 'PAGADA':
+                    # Se cambió a PAGADA: establecer fecha de pago
+                    reserva.pago.estado = 'PAGADO'
+                    if not reserva.pago.fecha_pago:
+                        reserva.pago.fecha_pago = timezone.now()
+                    if not reserva.pago.metodo_pago:
+                        reserva.pago.metodo_pago = 'EFECTIVO'
+                elif estado_nuevo == 'PENDIENTE':
+                    # Se cambió a PENDIENTE: marcar pago como pendiente
+                    reserva.pago.estado = 'PENDIENTE'
+                    reserva.pago.fecha_pago = None
+                    reserva.pago.metodo_pago = None
+                elif estado_nuevo == 'CANCELADA':
+                    # Se canceló: marcar pago como reembolsado si estaba pagado
+                    if reserva.pago.estado == 'PAGADO':
+                        reserva.pago.estado = 'REEMBOLSADO'
+                    else:
+                        reserva.pago.estado = 'PENDIENTE'
+                
                 reserva.pago.save()
             
             messages.success(request, 'Reserva actualizada exitosamente.')
-            return redirect('reserva_lista')
+            return redirect('reserva_detalle', pk=pk)
             
         except Exception as e:
             messages.error(request, f'Error al actualizar reserva: {str(e)}')
@@ -356,7 +438,43 @@ def reserva_eliminar(request, pk):
 def reserva_detalle(request, pk):
     """Ver detalle completo de una reserva"""
     reserva = get_object_or_404(Reserva, pk=pk)
-    return render(request, 'reservas/reservas/detalle.html', {'reserva': reserva})
+    response = render(request, 'reservas/reservas/detalle.html', {'reserva': reserva})
+    # Agregar headers para evitar caché
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+def reserva_marcar_pagada(request, pk):
+    """Marcar una reserva como pagada y establecer la fecha de pago"""
+    reserva = get_object_or_404(Reserva, pk=pk)
+    
+    if request.method == 'POST':
+        if reserva.estado != 'PENDIENTE':
+            messages.warning(request, 'Solo se pueden marcar como pagadas las reservas pendientes.')
+            return redirect('reserva_detalle', pk=pk)
+        
+        try:
+            # Cambiar estado de la reserva
+            reserva.estado = 'PAGADA'
+            reserva.save()
+            
+            # Actualizar el pago asociado
+            pago = reserva.pago
+            pago.estado = 'PAGADO'
+            pago.fecha_pago = timezone.now()
+            pago.metodo_pago = request.POST.get('metodo_pago', 'EFECTIVO')
+            pago.comprobante = request.POST.get('comprobante', '')
+            pago.save()
+            
+            messages.success(request, f'Reserva #{reserva.id} marcada como pagada exitosamente.')
+            return redirect('reserva_detalle', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error al marcar como pagada: {str(e)}')
+            return redirect('reserva_detalle', pk=pk)
+    
+    # Si es GET, redirigir al detalle
+    return redirect('reserva_detalle', pk=pk)
 
 # ========== VISTA DE REPORTES ==========
 
@@ -485,6 +603,16 @@ def reportes(request):
             'total_horas': float(total_horas)
         })
     
+    # Calcular porcentajes para el gráfico
+    if meses_data:
+        max_reservas = max(mes['total_reservas'] for mes in meses_data)
+        if max_reservas > 0:
+            for mes in meses_data:
+                mes['porcentaje'] = (mes['total_reservas'] / max_reservas) * 100
+        else:
+            for mes in meses_data:
+                mes['porcentaje'] = 0
+    
     # Preparar contexto
     context = {
         'mes_seleccionado': mes_seleccionado,
@@ -528,29 +656,60 @@ def reportes_pdf(request):
 # ========== VISTAS DE TORNEOS ==========
 
 def torneo_lista(request):
-    """Listar todos los torneos"""
+    """Listar todos los torneos con paginación"""
     # Obtener torneos y ordenarlos
-    torneos = Torneo.objects.all().order_by('-fecha_inicio')
+    torneos_list = Torneo.objects.all().order_by('-fecha_inicio')
     
-    # Clasificar torneos por estado
+    # Actualizar estados de torneos según fechas
     hoy = timezone.now().date()
+    for torneo in torneos_list:
+        estado_anterior = torneo.estado
+        
+        # Si pasó la fecha fin, debe estar FINALIZADO
+        if hoy > torneo.fecha_fin and torneo.estado != 'FINALIZADO':
+            torneo.estado = 'FINALIZADO'
+            torneo.save()
+        # Si está entre las fechas y tiene partidos, debe estar EN_CURSO
+        elif torneo.fecha_inicio <= hoy <= torneo.fecha_fin and torneo.estado != 'FINALIZADO':
+            if torneo.partidos.exists() and torneo.estado == 'INSCRIPCION':
+                torneo.estado = 'EN_CURSO'
+                torneo.save()
+    
+    # Paginación: 10 torneos por página
+    paginator = Paginator(torneos_list, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        torneos_page = paginator.page(page)
+    except PageNotAnInteger:
+        torneos_page = paginator.page(1)
+    except EmptyPage:
+        torneos_page = paginator.page(paginator.num_pages)
+    
+    # Clasificar torneos por estado actualizado
     torneos_activos = []
     torneos_proximos = []
     torneos_finalizados = []
     
-    for torneo in torneos:
-        if torneo.fecha_inicio <= hoy <= torneo.fecha_fin:
+    for torneo in torneos_page:
+        # Usar el estado del modelo, no calcular por fechas
+        if torneo.estado == 'EN_CURSO':
             torneos_activos.append(torneo)
-        elif torneo.fecha_inicio > hoy:
+        elif torneo.estado == 'INSCRIPCION' and torneo.fecha_inicio > hoy:
             torneos_proximos.append(torneo)
-        else:
+        elif torneo.estado == 'FINALIZADO':
             torneos_finalizados.append(torneo)
+        else:
+            # Si está en INSCRIPCION pero ya empezó, va a activos (edge case)
+            if torneo.estado == 'INSCRIPCION' and torneo.fecha_inicio <= hoy:
+                torneos_activos.append(torneo)
     
     context = {
         'torneos_activos': torneos_activos,
         'torneos_proximos': torneos_proximos,
         'torneos_finalizados': torneos_finalizados,
-        'total_torneos': torneos.count(),
+        'total_torneos': torneos_list.count(),
+        'torneos': torneos_page,  # Para la paginación
     }
     return render(request, 'reservas/torneos/lista.html', context)
 
@@ -576,10 +735,11 @@ def torneo_crear(request):
             torneo = Torneo.objects.create(
                 nombre=nombre,
                 descripcion=request.POST.get('descripcion', ''),
+                deporte=request.POST.get('deporte', 'Fútbol 5'),
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
                 premio=request.POST.get('premio', ''),
-                max_equipos=request.POST.get('max_equipos', None) or None,
+                estado=request.POST.get('estado', 'INSCRIPCION'),
                 costo_inscripcion=request.POST.get('costo_inscripcion', 0) or 0,
             )
             messages.success(request, f'Torneo "{torneo.nombre}" creado exitosamente.')
@@ -595,51 +755,69 @@ def torneo_detalle(request, pk):
     """Ver detalles de un torneo"""
     torneo = get_object_or_404(Torneo, pk=pk)
     
-    # Obtener reservas asociadas al torneo
-    reservas = Reserva.objects.filter(torneo=torneo).select_related('cliente', 'cancha').order_by('fecha_hora_inicio')
+    # Actualizar estado del torneo según las fechas
+    hoy = timezone.now().date()
+    estado_anterior = torneo.estado
     
-    # Calcular estadísticas
-    total_reservas = reservas.count()
-    reservas_confirmadas = reservas.filter(estado='CONFIRMADA').count()
-    reservas_pendientes = reservas.filter(estado='PENDIENTE').count()
+    if torneo.fecha_inicio <= hoy <= torneo.fecha_fin and torneo.estado != 'FINALIZADO':
+        # Si está entre las fechas y tiene fixture, debe estar EN_CURSO
+        if torneo.partidos.exists() and torneo.estado == 'INSCRIPCION':
+            torneo.estado = 'EN_CURSO'
+            torneo.save()
+    elif hoy > torneo.fecha_fin and torneo.estado != 'FINALIZADO':
+        # Si pasó la fecha fin, debería estar FINALIZADO
+        torneo.estado = 'FINALIZADO'
+        torneo.save()
     
-    # Calcular ingresos del torneo (inscripciones + reservas)
-    ingresos_inscripciones = float(torneo.costo_inscripcion or 0) * total_reservas
-    ingresos_reservas = sum(float(r.calcular_costo_total()) for r in reservas.filter(estado='CONFIRMADA'))
+    # Obtener equipos inscritos
+    equipos = torneo.equipos.all().order_by('nombre')
+    equipos_inscritos = equipos.count()
+    
+    # Calcular ingresos por inscripciones (solo costo de inscripción * equipos)
+    from decimal import Decimal
+    costo = torneo.costo_inscripcion if torneo.costo_inscripcion else Decimal('0.00')
+    ingresos_inscripciones = costo * equipos_inscritos
+    
+    # Debug
+    print(f"DEBUG Torneo {torneo.id}: costo={costo}, equipos={equipos_inscritos}, ingresos_inscripciones={ingresos_inscripciones}")
+    
+    # Calcular ingresos por reservas pagadas relacionadas al torneo
+    reservas_torneo = Reserva.objects.filter(torneo=torneo, estado='PAGADA')
+    ingresos_reservas = Decimal('0.00')
+    for r in reservas_torneo:
+        if hasattr(r, 'pago'):
+            ingresos_reservas += r.pago.monto_total
+    
+    # Total de ingresos del torneo
     ingresos_totales = ingresos_inscripciones + ingresos_reservas
     
-    # Estado del torneo
-    hoy = timezone.now().date()
-    if torneo.fecha_inicio <= hoy <= torneo.fecha_fin:
-        estado = 'EN CURSO'
-        estado_clase = 'badge-success'
-    elif torneo.fecha_inicio > hoy:
-        estado = 'PRÓXIMO'
-        estado_clase = 'badge-info'
-    else:
-        estado = 'FINALIZADO'
-        estado_clase = 'badge-ghost'
+    # Obtener estadísticas de partidos si existen
+    total_partidos = torneo.partidos.count()
+    partidos_completados = torneo.partidos.filter(estado='FINALIZADO').count()
     
-    # Calcular días restantes
-    if estado == 'PRÓXIMO':
+    # Calcular días de duración y días restantes
+    dias_duracion = (torneo.fecha_fin - torneo.fecha_inicio).days + 1
+    
+    if torneo.fecha_inicio > hoy:
         dias_restantes = (torneo.fecha_inicio - hoy).days
-    elif estado == 'EN CURSO':
+    elif torneo.fecha_fin >= hoy:
         dias_restantes = (torneo.fecha_fin - hoy).days
     else:
         dias_restantes = 0
     
     context = {
         'torneo': torneo,
-        'reservas': reservas,
-        'total_reservas': total_reservas,
-        'reservas_confirmadas': reservas_confirmadas,
-        'reservas_pendientes': reservas_pendientes,
+        'equipos': equipos,
+        'equipos_inscritos': equipos_inscritos,
         'ingresos_inscripciones': ingresos_inscripciones,
         'ingresos_reservas': ingresos_reservas,
         'ingresos_totales': ingresos_totales,
-        'estado': estado,
-        'estado_clase': estado_clase,
+        'reservas_count': reservas_torneo.count(),
+        'total_partidos': total_partidos,
+        'partidos_completados': partidos_completados,
+        'dias_duracion': dias_duracion,
         'dias_restantes': dias_restantes,
+        'today_date': hoy,
     }
     return render(request, 'reservas/torneos/detalle.html', context)
 
@@ -666,10 +844,11 @@ def torneo_editar(request, pk):
             
             torneo.nombre = nombre
             torneo.descripcion = request.POST.get('descripcion', '')
+            torneo.deporte = request.POST.get('deporte', 'Fútbol 5')
             torneo.fecha_inicio = fecha_inicio
             torneo.fecha_fin = fecha_fin
             torneo.premio = request.POST.get('premio', '')
-            torneo.max_equipos = request.POST.get('max_equipos', None) or None
+            torneo.estado = request.POST.get('estado', 'INSCRIPCION')
             torneo.costo_inscripcion = request.POST.get('costo_inscripcion', 0) or 0
             torneo.save()
             
@@ -699,4 +878,347 @@ def torneo_eliminar(request, pk):
     
     context = {'torneo': torneo}
     return render(request, 'reservas/torneos/confirmar_eliminar.html', context)
+
+
+def torneo_inscribir_equipo(request, pk):
+    """Inscribir equipos a un torneo"""
+    torneo = get_object_or_404(Torneo, pk=pk)
+    
+    # Actualizar estado según fechas
+    hoy = timezone.now().date()
+    if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
+        if torneo.partidos.exists():
+            torneo.estado = 'EN_CURSO'
+            torneo.save()
+    
+    # Validar que el torneo esté en inscripción Y no haya comenzado
+    if torneo.estado != 'INSCRIPCION' or torneo.fecha_inicio <= hoy:
+        messages.error(request, 'No se pueden inscribir equipos. El torneo ya comenzó o no está abierto para inscripciones.')
+        return redirect('torneo_detalle', pk=pk)
+    
+    if request.method == 'POST':
+        equipo_id = request.POST.get('equipo_id')
+        if equipo_id:
+            try:
+                equipo = Equipo.objects.get(id=equipo_id, activo=True)
+                torneo.equipos.add(equipo)
+                messages.success(request, f'Equipo "{equipo.nombre}" inscrito al torneo.')
+            except Equipo.DoesNotExist:
+                messages.error(request, 'El equipo seleccionado no existe o no está activo.')
+        return redirect('torneo_inscribir_equipo', pk=pk)
+    
+    # Obtener equipos ya inscritos y disponibles
+    equipos_inscritos = torneo.equipos.all().order_by('nombre')
+    equipos_disponibles = Equipo.objects.filter(activo=True).exclude(id__in=torneo.equipos.all()).order_by('nombre')
+    
+    context = {
+        'torneo': torneo,
+        'equipos_inscritos': equipos_inscritos,
+        'equipos_disponibles': equipos_disponibles,
+    }
+    return render(request, 'reservas/torneos/inscribir_equipos.html', context)
+
+
+def torneo_desinscribir_equipo(request, pk, equipo_pk):
+    """Desinscribir un equipo del torneo"""
+    torneo = get_object_or_404(Torneo, pk=pk)
+    equipo = get_object_or_404(Equipo, pk=equipo_pk)
+    
+    # Validar que el torneo esté en inscripción Y no haya comenzado
+    hoy = timezone.now().date()
+    if torneo.estado != 'INSCRIPCION' or torneo.fecha_inicio <= hoy:
+        messages.error(request, 'No se pueden desinscribir equipos. El torneo ya comenzó o no está abierto para inscripciones.')
+        return redirect('torneo_detalle', pk=pk)
+    
+    torneo.equipos.remove(equipo)
+    messages.success(request, f'Equipo "{equipo.nombre}" desinscrito del torneo.')
+    return redirect('torneo_inscribir_equipo', pk=pk)
+
+
+def torneo_generar_fixture(request, pk):
+    """Generar el fixture del torneo (eliminación directa)"""
+    torneo = get_object_or_404(Torneo, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            torneo.generar_fixture()
+            messages.success(request, 'Fixture generado exitosamente. El torneo está en curso.')
+            return redirect('torneo_fixture', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error al generar fixture: {str(e)}')
+            return redirect('torneo_detalle', pk=pk)
+    
+    import math
+    num_equipos = torneo.equipos.count()
+    es_potencia_de_2 = num_equipos > 0 and (num_equipos & (num_equipos - 1) == 0)
+    
+    # Calcular estructura del torneo si es válido
+    estructura = []
+    error = None
+    num_rondas = 0
+    
+    if num_equipos < 2:
+        error = "Se necesitan al menos 2 equipos para generar el fixture."
+    elif not es_potencia_de_2:
+        error = f"La cantidad de equipos ({num_equipos}) debe ser una potencia de 2."
+    else:
+        num_rondas = int(math.log2(num_equipos))
+        for ronda_num in range(1, num_rondas + 1):
+            partidos_en_ronda = num_equipos // (2 ** ronda_num)
+            
+            # Nombre de la ronda
+            if ronda_num == num_rondas:
+                nombre = "Final"
+            elif ronda_num == num_rondas - 1:
+                nombre = "Semifinal"
+            elif ronda_num == num_rondas - 2:
+                nombre = "Cuartos de Final"
+            else:
+                nombre = f"Ronda {ronda_num}"
+            
+            estructura.append({
+                'ronda': ronda_num,
+                'nombre': nombre,
+                'partidos': partidos_en_ronda
+            })
+    
+    context = {
+        'torneo': torneo,
+        'num_equipos': num_equipos,
+        'es_potencia_de_2': es_potencia_de_2,
+        'error': error,
+        'num_rondas': num_rondas,
+        'estructura': estructura,
+        'equipos': torneo.equipos.all().order_by('nombre'),
+    }
+    return render(request, 'reservas/torneos/generar_fixture.html', context)
+
+
+def torneo_fixture(request, pk):
+    """Ver el fixture completo del torneo"""
+    torneo = get_object_or_404(Torneo, pk=pk)
+    
+    if torneo.estado == 'INSCRIPCION':
+        messages.warning(request, 'El fixture aún no ha sido generado.')
+        return redirect('torneo_detalle', pk=pk)
+    
+    # Organizar partidos por ronda
+    import math
+    num_equipos = torneo.equipos.count()
+    total_rondas = int(math.log2(num_equipos)) if num_equipos > 0 else 0
+    
+    rondas = []
+    for ronda_num in range(1, total_rondas + 1):
+        partidos = torneo.partidos.filter(ronda=ronda_num).order_by('numero_partido')
+        
+        # Determinar nombre de la ronda
+        if ronda_num == total_rondas:
+            nombre_ronda = "Final"
+        elif ronda_num == total_rondas - 1:
+            nombre_ronda = "Semifinal"
+        elif ronda_num == total_rondas - 2:
+            nombre_ronda = "Cuartos de Final"
+        else:
+            nombre_ronda = f"Ronda {ronda_num}"
+        
+        rondas.append({
+            'numero': ronda_num,
+            'nombre': nombre_ronda,
+            'partidos': partidos
+        })
+    
+    context = {
+        'torneo': torneo,
+        'rondas': rondas,
+    }
+    return render(request, 'reservas/torneos/fixture.html', context)
+
+
+def partido_registrar_resultado(request, pk):
+    """Registrar el resultado de un partido"""
+    partido = get_object_or_404(Partido, pk=pk)
+    
+    if partido.estado == 'FINALIZADO':
+        messages.warning(request, 'Este partido ya tiene un resultado registrado.')
+        return redirect('torneo_fixture', pk=partido.torneo.pk)
+    
+    if request.method == 'POST':
+        try:
+            resultado_equipo1 = int(request.POST['resultado_equipo1'])
+            resultado_equipo2 = int(request.POST['resultado_equipo2'])
+            
+            if resultado_equipo1 < 0 or resultado_equipo2 < 0:
+                messages.error(request, 'Los resultados no pueden ser negativos.')
+                return render(request, 'reservas/torneos/registrar_resultado.html', {'partido': partido})
+            
+            if resultado_equipo1 == resultado_equipo2:
+                messages.error(request, 'No puede haber empate en eliminación directa.')
+                return render(request, 'reservas/torneos/registrar_resultado.html', {'partido': partido})
+            
+            partido.resultado_equipo1 = resultado_equipo1
+            partido.resultado_equipo2 = resultado_equipo2
+            
+            # El clean() del modelo determinará el ganador
+            partido.clean()
+            partido.save()
+            
+            messages.success(request, f'Resultado registrado. Ganador: {partido.ganador.nombre}')
+            return redirect('torneo_fixture', pk=partido.torneo.pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al registrar resultado: {str(e)}')
+    
+    context = {
+        'partido': partido,
+        'torneo': partido.torneo,
+    }
+    return render(request, 'reservas/torneos/registrar_resultado.html', context)
+
+
+# ========== VISTAS DE EQUIPOS (Independientes) ==========
+
+def equipo_lista(request):
+    """Listar todos los equipos con paginación"""
+    equipos_list = Equipo.objects.all().prefetch_related('jugadores', 'capitan', 'torneos')
+    
+    # Paginación: 10 equipos por página
+    paginator = Paginator(equipos_list, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        equipos = paginator.page(page)
+    except PageNotAnInteger:
+        equipos = paginator.page(1)
+    except EmptyPage:
+        equipos = paginator.page(paginator.num_pages)
+    
+    context = {
+        'equipos': equipos,
+    }
+    return render(request, 'reservas/equipos/lista.html', context)
+
+
+def equipo_crear(request):
+    """Crear un nuevo equipo"""
+    if request.method == 'POST':
+        try:
+            nombre = request.POST['nombre']
+            
+            # Validar nombre único
+            if Equipo.objects.filter(nombre__iexact=nombre).exists():
+                messages.error(request, f'Ya existe un equipo con el nombre "{nombre}".')
+                clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
+                return render(request, 'reservas/equipos/form.html', {
+                    'clientes': clientes
+                })
+            
+            equipo = Equipo.objects.create(
+                nombre=nombre,
+                logo=request.POST.get('logo', ''),
+                activo=request.POST.get('activo') == 'on'
+            )
+            
+            # Asignar capitán si se seleccionó
+            capitan_id = request.POST.get('capitan')
+            if capitan_id:
+                equipo.capitan_id = capitan_id
+                equipo.save()
+            
+            # Asignar jugadores
+            jugadores_ids = request.POST.getlist('jugadores')
+            if jugadores_ids:
+                equipo.jugadores.set(jugadores_ids)
+            
+            messages.success(request, f'Equipo "{equipo.nombre}" creado exitosamente.')
+            return redirect('equipo_lista')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear equipo: {str(e)}')
+    
+    clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
+    return render(request, 'reservas/equipos/form.html', {
+        'clientes': clientes
+    })
+
+
+def equipo_detalle(request, pk):
+    """Ver detalles de un equipo"""
+    equipo = get_object_or_404(Equipo, pk=pk)
+    torneos = equipo.torneos.all()
+    
+    context = {
+        'equipo': equipo,
+        'torneos': torneos,
+    }
+    return render(request, 'reservas/equipos/detalle.html', context)
+
+
+def equipo_editar(request, pk):
+    """Editar un equipo existente"""
+    equipo = get_object_or_404(Equipo, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            nombre = request.POST['nombre']
+            
+            # Validar nombre único (excepto el actual)
+            if Equipo.objects.filter(nombre__iexact=nombre).exclude(pk=pk).exists():
+                messages.error(request, f'Ya existe otro equipo con el nombre "{nombre}".')
+                clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
+                return render(request, 'reservas/equipos/form.html', {
+                    'equipo': equipo,
+                    'clientes': clientes
+                })
+            
+            equipo.nombre = nombre
+            equipo.logo = request.POST.get('logo', '')
+            equipo.activo = request.POST.get('activo') == 'on'
+            
+            # Actualizar capitán
+            capitan_id = request.POST.get('capitan')
+            if capitan_id:
+                equipo.capitan_id = capitan_id
+            else:
+                equipo.capitan = None
+            
+            equipo.save()
+            
+            # Actualizar jugadores
+            jugadores_ids = request.POST.getlist('jugadores')
+            equipo.jugadores.set(jugadores_ids)
+            
+            messages.success(request, f'Equipo "{equipo.nombre}" actualizado exitosamente.')
+            return redirect('equipo_detalle', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al actualizar equipo: {str(e)}')
+    
+    clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
+    return render(request, 'reservas/equipos/form.html', {
+        'equipo': equipo,
+        'clientes': clientes
+    })
+
+
+def equipo_eliminar(request, pk):
+    """Eliminar un equipo"""
+    equipo = get_object_or_404(Equipo, pk=pk)
+    
+    # Verificar si el equipo está en algún torneo
+    torneos_activos = equipo.torneos.filter(activo=True)
+    if torneos_activos.exists():
+        messages.error(request, f'No se puede eliminar el equipo porque está inscrito en {torneos_activos.count()} torneo(s) activo(s).')
+        return redirect('equipo_detalle', pk=pk)
+    
+    if request.method == 'POST':
+        nombre = equipo.nombre
+        equipo.delete()
+        messages.success(request, f'Equipo "{nombre}" eliminado exitosamente.')
+        return redirect('equipo_lista')
+    
+    context = {
+        'equipo': equipo
+    }
+    return render(request, 'reservas/equipos/confirmar_eliminar.html', context)
+
 

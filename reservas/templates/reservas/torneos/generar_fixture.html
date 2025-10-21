@@ -1,0 +1,156 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Generar Fixture - {{ torneo.nombre }} - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+<!-- Breadcrumb -->
+<div class="text-sm breadcrumbs mb-4">
+    <ul>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li><a href="{% url 'torneo_lista' %}">Torneos</a></li>
+        <li><a href="{% url 'torneo_detalle' torneo.pk %}">{{ torneo.nombre }}</a></li>
+        <li>Generar Fixture</li>
+    </ul>
+</div>
+
+<div class="card bg-base-100 shadow-xl max-w-3xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            Generar Fixture del Torneo
+        </h2>
+        
+        <!-- Info del torneo -->
+        <div class="bg-base-200 p-6 rounded-box mb-6">
+            <h3 class="text-2xl font-bold mb-2">{{ torneo.nombre }}</h3>
+            <div class="text-sm text-base-content/60 space-y-1">
+                <p>{{ torneo.fecha_inicio|date:"d/m/Y" }} - {{ torneo.fecha_fin|date:"d/m/Y" }}</p>
+                <p>Modalidad: Eliminación Directa</p>
+                <p>Equipos inscritos: {{ num_equipos }}</p>
+            </div>
+        </div>
+        
+        {% if error %}
+        <!-- Error: No es potencia de 2 -->
+        <div class="alert alert-error shadow-lg mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">⚠️ No se puede generar el fixture</h3>
+                <p class="text-sm mt-1">{{ error }}</p>
+                <p class="text-sm mt-2">
+                    Cantidades válidas: 2, 4, 8, 16, 32, 64 equipos.
+                    <br>Actualmente tienes {{ num_equipos }} equipo(s) inscrito(s).
+                </p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 justify-end">
+            <a href="{% url 'torneo_detalle' torneo.pk %}" class="btn btn-ghost gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Torneo
+            </a>
+            <a href="{% url 'torneo_inscribir_equipo' torneo.pk %}" class="btn btn-primary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Ajustar Equipos
+            </a>
+        </div>
+        
+        {% else %}
+        <!-- Todo OK: Mostrar preview y confirmar -->
+        <div class="alert alert-success shadow-lg mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">✅ El torneo está listo para generar el fixture</h3>
+                <p class="text-sm mt-1">{{ num_equipos }} equipos participarán en {{ num_rondas }} ronda(s).</p>
+            </div>
+        </div>
+        
+        <!-- Estructura del torneo -->
+        <div class="bg-base-200 p-6 rounded-box mb-6">
+            <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                Estructura del Torneo
+            </h3>
+            <div class="space-y-2">
+                {% for ronda_info in estructura %}
+                <div class="flex items-center gap-3 p-3 bg-base-100 rounded-box">
+                    <div class="badge badge-primary">Ronda {{ ronda_info.ronda }}</div>
+                    <div class="flex-1">
+                        <span class="font-semibold">{{ ronda_info.nombre }}</span>
+                        <span class="text-sm text-base-content/60 ml-2">({{ ronda_info.partidos }} partido(s))</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Equipos Participantes -->
+        <div class="bg-base-200 p-6 rounded-box mb-6">
+            <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Equipos Participantes
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {% for equipo in equipos %}
+                <div class="p-2 bg-base-100 rounded-box flex items-center gap-2">
+                    {% if equipo.logo %}
+                    <span>{{ equipo.logo }}</span>
+                    {% endif %}
+                    <span class="text-sm truncate">{{ equipo.nombre }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Advertencia final -->
+        <div class="alert alert-warning shadow-lg mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+                <h3 class="font-bold">⚠️ Importante</h3>
+                <div class="text-sm mt-1">
+                    • Una vez generado el fixture, <strong>no se podrán inscribir más equipos</strong>.
+                    <br>• Los cruces se asignarán de forma aleatoria.
+                    <br>• El torneo pasará al estado "En Curso".
+                </div>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'torneo_detalle' torneo.pk %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-warning gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Generar Fixture
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

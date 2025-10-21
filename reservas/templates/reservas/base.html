@@ -1,239 +1,779 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es" data-theme="corporate">
+<html lang="es" data-theme="black">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}Sistema de Reservas{% endblock %}</title>
     
-    <!-- Google Fonts - Fuentes modernas estilo Next.js -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS + DaisyUI -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Custom CSS profesional -->
     <style>
-        /* Fuentes modernas estilo Next.js */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            font-size: 15px;
-            line-height: 1.6;
-            letter-spacing: -0.011em;
-            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+        /* Tema Minimalista Deportivo - Azul Marino + Verde Lima */
+        :root {
+            /* Colores principales */
+            --color-primary: #1e3a8a;        /* Azul marino profundo */
+            --color-primary-dark: #1e293b;   /* Azul marino más oscuro */
+            --color-primary-light: #3b82f6;  /* Azul brillante */
+            --color-accent: #84cc16;         /* Verde lima energético */
+            --color-accent-dark: #65a30d;    /* Verde lima oscuro */
+            --color-accent-light: #a3e635;   /* Verde lima claro */
+            
+            /* Neutros */
+            --color-white: #ffffff;
+            --color-black: #0f172a;          /* Casi negro con tinte azul */
+            --color-gray-50: #f8fafc;
+            --color-gray-100: #f1f5f9;
+            --color-gray-200: #e2e8f0;
+            --color-gray-300: #cbd5e1;
+            --color-gray-400: #94a3b8;
+            --color-gray-500: #64748b;
+            --color-gray-600: #475569;
+            --color-gray-700: #334155;
+            --color-gray-800: #1e293b;
+            --color-gray-900: #0f172a;
+            
+            /* Estados */
+            --color-success: #84cc16;        /* Verde lima */
+            --color-warning: #f59e0b;        /* Naranja */
+            --color-error: #ef4444;          /* Rojo */
+            --color-info: #3b82f6;           /* Azul */
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         
-        h1, h2, h3, h4, h5, h6, .title-font {
-            font-family: 'Space Grotesk', 'Inter', -apple-system, sans-serif;
-            letter-spacing: -0.025em;
-            font-weight: 700;
+        body {
+            background-color: var(--color-gray-50);
+            color: var(--color-gray-900);
+            font-size: 14px;
+            line-height: 1.5;
+            letter-spacing: -0.011em;
         }
         
-        /* Colores corporativos personalizados */
-        :root {
-            --color-primary: #1e3a8a;      /* Azul marino oscuro */
-            --color-secondary: #64748b;    /* Gris azulado */
-            --color-accent: #0f766e;       /* Verde azulado */
-            --color-success: #047857;      /* Verde oscuro */
-            --color-warning: #b45309;      /* Naranja oscuro */
-            --color-error: #991b1b;        /* Rojo oscuro */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            letter-spacing: -0.04em;
+            color: var(--color-primary);
         }
         
-        /* Animaciones sutiles */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(2px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .fade-in {
-            animation: fadeIn 0.4s ease-out;
+        
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        
+        /* Navbar deportivo - Azul marino */
+        .navbar-mono {
+            background-color: var(--color-primary);
+            border-bottom: 3px solid var(--color-accent);
+            color: var(--color-white);
         }
         
-        /* Navbar más profesional */
-        .navbar-professional {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            border-bottom: 3px solid #0f766e;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        .navbar-mono a {
+            color: var(--color-white);
         }
         
-        /* Cards con bordes más redondeados */
-        .card-professional {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
+        .navbar-mono a:hover {
+            color: var(--color-accent);
         }
         
-        .card-professional:hover {
-            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-        
-        /* Bordes redondeados globales */
+        /* Cards limpias con sombra sutil */
         .card {
-            border-radius: 16px;
+            background-color: var(--color-white);
+            border: 1px solid var(--color-gray-200);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
         }
         
-        .btn {
-            border-radius: 10px;
-            font-weight: 600;
-            text-transform: none;
-            letter-spacing: -0.01em;
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-color: var(--color-accent);
         }
         
-        .badge {
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.75rem;
-            padding: 0.4rem 0.75rem;
+        /* Botones deportivos */
+        .btn { border-radius: 0.5rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; transition: all 0.2s ease; font-size: 14px; }
+        
+        .btn-primary {
+            background-color: var(--color-accent);
+            color: var(--color-primary-dark);
+            border: 2px solid var(--color-accent);
         }
         
-        .stat {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
+        .btn-primary:hover {
+            background-color: var(--color-accent-dark);
+            border-color: var(--color-accent-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(132, 204, 22, 0.3);
         }
         
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            transform: translateY(-1px);
+        }
+        
+        .btn-ghost {
+            background-color: transparent;
+            border: none;
+            color: var(--color-white);
+        }
+        
+        .btn-ghost:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-success, .btn-warning, .btn-info, .btn-error {
+            background-color: var(--color-accent);
+            color: var(--color-primary-dark);
+            border: 2px solid var(--color-accent);
+        }
+        
+        .btn-success:hover, .btn-warning:hover, .btn-info:hover, .btn-error:hover {
+            background-color: var(--color-accent-dark);
+            border-color: var(--color-accent-dark);
+            transform: translateY(-1px);
+        }
+        
+        /* Inputs deportivos */
         .input, .select, .textarea {
-            border-radius: 10px;
+            background-color: var(--color-white);
+            border: 2px solid var(--color-gray-300);
+            border-radius: 0.5rem;
+            color: var(--color-gray-900);
+            transition: all 0.2s ease;
         }
         
+        .input:focus, .select:focus, .textarea:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        }
+        
+        .input::placeholder, .textarea::placeholder {
+            color: var(--color-gray-400);
+        }
+        
+        /* Badges deportivos */
+        .badge {
+            border-radius: 0.375rem;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 0.375rem 0.75rem;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+        }
+        
+        .badge-primary {
+            background-color: var(--color-accent);
+            color: var(--color-primary-dark);
+            border: none;
+        }
+        
+        .badge-outline {
+            background-color: transparent;
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+        
+        .badge-success {
+            background-color: var(--color-success);
+            color: var(--color-primary-dark);
+        }
+        
+        .badge-error {
+            background-color: var(--color-error);
+            color: var(--color-white);
+        }
+        
+        .badge-warning {
+            background-color: var(--color-warning);
+            color: var(--color-primary-dark);
+        }
+        
+        .badge-info {
+            background-color: var(--color-info);
+            color: var(--color-white);
+        }
+        
+        .badge-ghost {
+            background-color: var(--color-gray-200);
+            color: var(--color-gray-600);
+            border: 1px solid var(--color-gray-300);
+        }
+        
+        /* Alerts deportivos */
         .alert {
-            border-radius: 12px;
+            border-radius: 0.75rem;
+            border: 2px solid var(--color-gray-200);
+            background-color: var(--color-white);
+            color: var(--color-gray-900);
         }
         
-        /* Tablas más limpias */
+        .alert-success {
+            background-color: rgba(132, 204, 22, 0.1);
+            color: var(--color-primary-dark);
+            border-color: var(--color-accent);
+        }
+        
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border-color: var(--color-error);
+        }
+        
+        .alert-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+            border-color: var(--color-warning);
+        }
+        
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+            border-color: var(--color-info);
+        }
+        
+        /* Stats deportivos */
+        .stat {
+            border: 2px solid var(--color-gray-200);
+            border-radius: 0.75rem;
+            background-color: var(--color-white);
+            padding: 1.5rem;
+        }
+        
+        .stat-title {
+            color: var(--color-gray-700);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-value {
+            color: var(--color-primary);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+        
+        /* Tablas limpias */
         .table {
-            font-size: 0.9rem;
+            font-size: 14px;
+            color: var(--color-gray-900);
+            background-color: var(--color-white);
         }
         
         .table th {
+            background-color: var(--color-gray-100);
+            color: var(--color-primary);
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 11px;
             letter-spacing: 0.05em;
-            color: #475569;
-            background-color: #f8fafc;
+            border-bottom: 2px solid var(--color-gray-300);
         }
         
-        /* Footer corporativo */
-        .footer-professional {
-            background: #1e293b;
-            color: #cbd5e1;
-            border-top: 3px solid #0f766e;
+        /* Asegurar que todos los th sean legibles - SUPER IMPORTANTE */
+        .table thead th,
+        .table th,
+        table thead th,
+        table th,
+        thead th,
+        th {
+            color: var(--color-primary) !important;
+            background-color: var(--color-gray-100) !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            font-size: 11px !important;
+            letter-spacing: 0.05em !important;
+        }
+        
+        /* Th con bg-primary (reportes) */
+        .table th.bg-primary,
+        .table thead tr th.bg-primary {
+            background-color: var(--color-primary) !important;
+            color: var(--color-white) !important;
+        }
+        
+        /* Forzar estilos en TODAS las tablas */
+        table {
+            color: var(--color-gray-900) !important;
+        }
+        
+        table tr {
+            background-color: var(--color-white) !important;
+        }
+        
+        table tr:hover {
+            background-color: rgba(132, 204, 22, 0.08) !important;
+        }
+        
+        /* Collapse (acordeones) */
+        .collapse {
+            background-color: var(--color-gray-100);
+            border: 2px solid var(--color-gray-200);
+        }
+        
+        .collapse-title {
+            color: var(--color-gray-900) !important;
+            font-weight: 600;
+        }
+        
+        .collapse:not(.collapse-close) input:checked ~ .collapse-content {
+            background-color: var(--color-white);
+        }
+        
+        /* Checkboxes */
+        .checkbox-primary:checked {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+        
+        /* Labels con bg-base-200 */
+        label.label.cursor-pointer {
+            transition: all 0.2s ease;
+        }
+        
+        label.label.cursor-pointer:hover {
+            background-color: rgba(132, 204, 22, 0.05);
+        }
+        
+        label.label .label-text {
+            color: var(--color-gray-900) !important;
+        }
+        
+        /* Fondo base-200 más claro */
+        .bg-base-200,
+        .card.bg-base-200 {
+            background-color: var(--color-gray-50) !important;
+        }
+        
+        /* Zebra tables */
+        .table-zebra tbody tr:nth-child(even) {
+            background-color: var(--color-gray-50);
+        }
+        
+        .table-zebra tbody tr:nth-child(odd) {
+            background-color: var(--color-white);
+        }
+        
+        .table tr {
+            border-bottom: 1px solid var(--color-gray-200);
+            background-color: var(--color-white);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(132, 204, 22, 0.08) !important;
+        }
+        
+        .table tbody tr:hover td {
+            color: var(--color-gray-900) !important;
+        }
+        
+        /* Divider */
+        .divider {
+            border-color: var(--color-gray-300);
+        }
+        
+        /* Menu dropdown */
+        .menu {
+            background-color: var(--color-white);
+            border: 2px solid var(--color-gray-200);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu li a {
+            color: var(--color-gray-900);
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .menu li a:hover {
+            background-color: var(--color-accent);
+            color: var(--color-primary-dark);
+        }
+        
+        /* Radio y Checkbox */
+        .radio, .checkbox {
+            border: 2px solid var(--color-gray-400);
+        }
+        
+        .radio:checked, .checkbox:checked {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+        
+        /* Breadcrumbs */
+        .breadcrumbs a {
+            color: var(--color-gray-500);
+            font-size: 13px;
+        }
+        
+        .breadcrumbs a:hover {
+            color: var(--color-accent);
+        }
+        
+        /* Links */
+        a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--color-accent);
+        }
+        
+        /* Scrollbar deportivo */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--color-gray-100);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-accent);
+        }
+        
+        /* Footer */
+        .footer-mono {
+            background-color: var(--color-primary);
+            border-top: 3px solid var(--color-accent);
+            color: var(--color-white);
+        }
+        
+        .footer-mono * {
+            color: var(--color-white) !important;
+        }
+        
+        .footer-mono .text-gray-200 {
+            color: #e5e7eb !important;
+        }
+        
+        /* Navbar Admin button */
+        .navbar-mono .navbar-end .btn-ghost {
+            color: var(--color-white) !important;
+        }
+        
+        .navbar-mono .navbar-end .btn-ghost:hover {
+            background-color: rgba(132, 204, 22, 0.2) !important;
+            color: var(--color-accent) !important;
+        }
+        
+        /* Dropdown menus */
+        .dropdown-content {
+            background-color: var(--color-white) !important;
+            border: 2px solid var(--color-gray-200) !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .dropdown-content.menu li a {
+            color: var(--color-gray-900) !important;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-content.menu li a:hover {
+            background-color: var(--color-gray-100) !important;
+        }
+        
+        .dropdown-content.menu li a.text-error {
+            color: var(--color-error) !important;
+        }
+        
+        .dropdown-content.menu li a.text-error:hover {
+            background-color: #fee2e2 !important;
+        }
+        
+        /* Selección */
+        ::selection {
+            background-color: var(--color-accent);
+            color: var(--color-primary-dark);
+        }
+        
+        /* Focus visible */
+        *:focus-visible {
+            outline: 3px solid var(--color-accent);
+            outline-offset: 2px;
+        }
+        
+        /* Clases DaisyUI override para el tema deportivo */
+        .bg-base-100 {
+            background-color: var(--color-white) !important;
+        }
+        
+        .bg-primary {
+            background-color: var(--color-primary) !important;
+        }
+        
+        .text-primary-content {
+            color: var(--color-white) !important;
+        }
+        
+        .text-base-content {
+            color: var(--color-gray-900) !important;
+        }
+        
+        .bg-success {
+            background-color: var(--color-success) !important;
+        }
+        
+        .text-success {
+            color: var(--color-accent-dark) !important;
+        }
+        
+        .bg-warning {
+            background-color: var(--color-warning) !important;
+        }
+        
+        .bg-info {
+            background-color: var(--color-info) !important;
+        }
+        
+        .bg-error {
+            background-color: var(--color-error) !important;
+        }
+        
+        .border-success {
+            border-color: var(--color-success) !important;
+        }
+        
+        .border-error {
+            border-color: var(--color-error) !important;
+        }
+        
+        /* Avatar placeholder */
+        .avatar.placeholder > div {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+        }
+        
+        /* Opacity utilities */
+        .opacity-60 {
+            opacity: 0.6;
+        }
+        
+        .opacity-90 {
+            opacity: 0.9;
+        }
+        
+        /* Text color utilities */
+        .text-gray-500 {
+            color: var(--color-gray-600) !important;
+        }
+        
+        .text-gray-600 {
+            color: var(--color-gray-700) !important;
+        }
+        
+        /* Gradientes eliminados - fondos sólidos */
+        .bg-gradient-to-br,
+        .bg-gradient-to-r {
+            background-image: none !important;
+        }
+        
+        .from-primary, .to-primary, .to-primary-focus {
+            background-color: var(--color-primary) !important;
+        }
+        
+        .from-success, .to-success, .to-success-focus {
+            background-color: var(--color-success) !important;
+        }
+        
+        .from-warning, .to-warning, .to-warning-focus {
+            background-color: var(--color-warning) !important;
+        }
+        
+        .from-info, .to-info, .to-info-focus {
+            background-color: var(--color-info) !important;
+        }
+        
+        .text-white {
+            color: var(--color-white) !important;
+        }
+        
+        /* Ajuste de texto sobre fondos oscuros */
+        .bg-primary .text-sm,
+        .bg-primary .font-semibold {
+            color: var(--color-white) !important;
+        }
+        
+        /* Prevenir fondos negros en hover */
+        tr:hover,
+        .hover\:bg-base-200:hover,
+        .hover\:bg-base-300:hover {
+            background-color: rgba(132, 204, 22, 0.08) !important;
+        }
+        
+        /* Asegurar texto oscuro en fondos claros */
+        .card,
+        .table,
+        .stat,
+        .bg-base-100,
+        .bg-white {
+            color: var(--color-gray-900) !important;
+        }
+        
+        /* Íconos y número de fila */
+        .table td:first-child,
+        .table th:first-child {
+            color: var(--color-gray-600) !important;
+        }
+        
+        /* Texto pequeño más oscuro */
+        .text-sm:not(.bg-primary *) {
+            color: var(--color-gray-700) !important;
+        }
+        
+        .text-xs:not(.bg-primary *) {
+            color: var(--color-gray-600) !important;
+        }
+        
+        /* Input group (búsqueda) */
+        .input-group {
+            display: flex;
+            align-items: stretch;
+        }
+        
+        .input-group span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+            background-color: var(--color-gray-100);
+            border: 2px solid var(--color-gray-300);
+            border-right: none;
+            border-radius: 0.5rem 0 0 0.5rem;
+        }
+        
+        .input-group span svg {
+            color: var(--color-gray-600);
+        }
+        
+        .input-group input {
+            border-radius: 0 0.5rem 0.5rem 0;
+            border-left: none;
+        }
+        
+        .input-group input:focus {
+            border-left: 2px solid var(--color-accent);
+        }
+        
+        .input-group input:focus + span,
+        .input-group span:has(+ input:focus) {
+            border-color: var(--color-accent);
         }
     </style>
     
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'corp-blue': '#1e3a8a',
-                        'corp-gray': '#64748b',
-                        'corp-accent': '#0f766e',
-                    }
-                }
-            }
-        }
-    </script>
-    
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-slate-50 min-h-screen antialiased">
-    <!-- Navbar Profesional -->
-    <div class="navbar navbar-professional text-white shadow-xl sticky top-0 z-50">
+<body class="min-h-screen antialiased">
+    <div class="navbar navbar-mono sticky top-0 z-50">
         <div class="navbar-start">
             <div class="dropdown">
-                <label tabindex="0" class="btn btn-ghost lg:hidden text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                <label tabindex="0" class="btn btn-ghost lg:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
                     </svg>
                 </label>
-                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-white rounded-lg w-64 border border-slate-200">
-                    <li><a href="{% url 'home' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Inicio</a></li>
-                    <li><a href="{% url 'cliente_lista' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Clientes</a></li>
-                    <li><a href="{% url 'cancha_lista' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Canchas</a></li>
-                    <li><a href="{% url 'reserva_lista' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Reservas</a></li>
-                    <li><a href="{% url 'torneo_lista' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Torneos</a></li>
-                    <li><a href="{% url 'reportes' %}" class="text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">Reportes</a></li>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl w-52">
+                    <li><a href="{% url 'home' %}">Inicio</a></li>
+                    <li><a href="{% url 'cliente_lista' %}">Clientes</a></li>
+                    <li><a href="{% url 'cancha_lista' %}">Canchas</a></li>
+                    <li><a href="{% url 'reserva_lista' %}">Reservas</a></li>
+                    <li><a href="{% url 'torneo_lista' %}">Torneos</a></li>
+                    <li><a href="{% url 'equipo_lista' %}">Equipos</a></li>
+                    <li><a href="{% url 'reportes' %}">Reportes</a></li>
                 </ul>
             </div>
-            <a href="{% url 'home' %}" class="btn btn-ghost normal-case text-xl font-bold title-font text-white hover:bg-blue-800">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            <a href="{% url 'home' %}" class="btn btn-ghost normal-case text-base font-semibold gap-2 tracking-tight">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                Reservas Deportivas
+                Reservas
             </a>
         </div>
         <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1 gap-1">
-                <li><a href="{% url 'home' %}" class="text-white hover:bg-blue-800 font-semibold">Inicio</a></li>
-                <li><a href="{% url 'cliente_lista' %}" class="text-white hover:bg-blue-800 font-semibold">Clientes</a></li>
-                <li><a href="{% url 'cancha_lista' %}" class="text-white hover:bg-blue-800 font-semibold">Canchas</a></li>
-                <li><a href="{% url 'reserva_lista' %}" class="text-white hover:bg-blue-800 font-semibold">Reservas</a></li>
-                <li><a href="{% url 'torneo_lista' %}" class="text-white hover:bg-blue-800 font-semibold">🏆 Torneos</a></li>
-                <li><a href="{% url 'reportes' %}" class="text-white hover:bg-blue-800 font-semibold">📊 Reportes</a></li>
+            <ul class="menu menu-horizontal px-1 gap-1 text-sm">
+                <li><a href="{% url 'home' %}">Inicio</a></li>
+                <li><a href="{% url 'cliente_lista' %}">Clientes</a></li>
+                <li><a href="{% url 'cancha_lista' %}">Canchas</a></li>
+                <li><a href="{% url 'reserva_lista' %}">Reservas</a></li>
+                <li><a href="{% url 'torneo_lista' %}">Torneos</a></li>
+                <li><a href="{% url 'equipo_lista' %}">Equipos</a></li>
+                <li><a href="{% url 'reportes' %}">Reportes</a></li>
             </ul>
         </div>
         <div class="navbar-end">
-            <a href="/admin/" class="btn btn-ghost btn-sm text-white hover:bg-blue-800 font-semibold">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <a href="/admin/" class="btn btn-ghost btn-sm gap-1.5 text-sm text-white hover:text-accent hover:bg-primary-dark">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Panel Admin
+                Admin
             </a>
         </div>
     </div>
 
-    <!-- Messages -->
     {% if messages %}
-    <div class="container mx-auto px-4 py-6 max-w-7xl">
+    <div class="container mx-auto px-4 py-4 max-w-7xl">
         {% for message in messages %}
-        <div class="alert {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800{% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %} shadow-sm border fade-in mb-3 rounded-lg">
-            <div class="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    {% if message.tags == 'success' %}
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    {% elif message.tags == 'error' %}
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    {% else %}
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    {% endif %}
-                </svg>
-                <span class="font-medium">{{ message }}</span>
-            </div>
+        <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} fade-in mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                {% if message.tags == 'success' %}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {% elif message.tags == 'error' %}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {% else %}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {% endif %}
+            </svg>
+            <span class="font-medium text-sm">{{ message }}</span>
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-10 max-w-7xl fade-in">
+    <main class="container mx-auto px-4 py-8 max-w-7xl fade-in">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer Profesional -->
-    <footer class="footer-professional p-12 mt-24">
+    <footer class="footer-mono p-8 mt-16" style="background-color: #1e3a8a; border-top: 3px solid #84cc16;">
         <div class="container mx-auto max-w-7xl">
-            <div class="text-center">
-                <div class="mb-6">
-                    <h3 class="text-2xl font-bold title-font text-white mb-2">Sistema de Reservas de Canchas Deportivas</h3>
-                    <div class="w-24 h-1 bg-teal-500 mx-auto mb-4"></div>
+            <div class="text-center space-y-2">
+                <div class="text-xs font-bold tracking-wider uppercase" style="color: #ffffff !important;">
+                    Sistema de Reservas Deportivas
                 </div>
-                <div class="space-y-2">
-                    <p class="text-slate-300 font-semibold text-sm">Universidad Tecnológica Nacional - Facultad Regional Córdoba</p>
-                    <p class="text-slate-400 text-sm">Desarrollo de Aplicaciones con Objetos (DAO) - 2025</p>
-                    <p class="text-slate-400 text-sm font-medium">Trabajo Práctico Integrador - Tema 1 - Grupo 60</p>
-                    <div class="mt-4 pt-4 border-t border-slate-700">
-                        <p class="text-slate-500 text-xs">
-                            Salvador Gibert | Ignacio Maspero | Tiziana Carrizo | Agustin Rey Laje | Marco Figueroa
-                        </p>
-                    </div>
+                <div class="h-px w-12 mx-auto" style="background-color: #84cc16;"></div>
+                <div class="text-xs font-semibold" style="color: #f3f4f6 !important;">
+                    UTN FRC · DAO · 2025 · Grupo 60
+                </div>
+                <div class="text-xs pt-2 font-medium" style="color: #ffffff !important;">
+                    Gibert · Maspero · Carrizo · Rey Laje · Figueroa
                 </div>
             </div>
         </div>

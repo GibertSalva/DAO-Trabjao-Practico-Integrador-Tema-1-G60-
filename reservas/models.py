@@ -81,7 +81,7 @@ class Cliente(models.Model):
         """Verifica si el cliente puede hacer más reservas en una fecha determinada"""
         reservas_dia = self.reservas.filter(
             fecha_hora_inicio__date=fecha,
-            estado__in=['PENDIENTE', 'CONFIRMADA']
+            estado__in=['PENDIENTE', 'PAGADA']
         ).count()
         return reservas_dia < MAX_RESERVAS_POR_CLIENTE_DIA
     
@@ -122,7 +122,7 @@ class Cancha(models.Model):
             return False
         
         reservas_conflicto = self.reservas.filter(
-            estado__in=['PENDIENTE', 'CONFIRMADA']
+            estado__in=['PENDIENTE', 'PAGADA']
         ).filter(
             models.Q(fecha_hora_inicio__lt=fecha_fin) & 
             models.Q(fecha_hora_fin__gt=fecha_inicio)
@@ -157,17 +157,17 @@ class Servicio(models.Model):
         ordering = ['nombre']
 
 class Torneo(models.Model):
+    ESTADO_CHOICES = [
+        ('INSCRIPCION', 'Abierto para Inscripciones'),
+        ('EN_CURSO', 'En Curso'),
+        ('FINALIZADO', 'Finalizado'),
+    ]
+    
     nombre = models.CharField(max_length=200, unique=True)
     descripcion = models.TextField(blank=True, null=True, help_text="Descripción del torneo")
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
     premio = models.CharField(max_length=200, blank=True, null=True, help_text="Premio del torneo")
-    max_equipos = models.PositiveIntegerField(
-        blank=True, 
-        null=True,
-        validators=[MinValueValidator(2)],
-        help_text="Máximo de equipos permitidos (opcional)"
-    )
     costo_inscripcion = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -176,6 +176,18 @@ class Torneo(models.Model):
         help_text="Costo de inscripción al torneo"
     )
     reglamento = models.TextField(blank=True, null=True)
+    estado = models.CharField(
+        max_length=20, 
+        choices=ESTADO_CHOICES, 
+        default='INSCRIPCION',
+        help_text="Estado actual del torneo"
+    )
+    equipos = models.ManyToManyField(
+        'Equipo', 
+        blank=True, 
+        related_name='torneos',
+        help_text="Equipos inscritos en el torneo"
+    )
     activo = models.BooleanField(default=True)
 
     def __str__(self):
@@ -191,17 +203,286 @@ class Torneo(models.Model):
                     'fecha_fin': 'La fecha de fin debe ser posterior a la fecha de inicio.'
                 })
     
+    def equipos_count(self):
+        """Retorna la cantidad de equipos inscritos"""
+        return self.equipos.count()
+    
+    def puede_agregar_equipos(self):
+        """Verifica si se pueden agregar equipos (solo si está en inscripción)"""
+        return self.estado == 'INSCRIPCION'
+    
+    def generar_fixture(self):
+        """Genera el fixture de eliminación directa"""
+        if self.estado != 'INSCRIPCION':
+            raise ValidationError('Solo se puede generar el fixture si el torneo está en inscripción.')
+        
+        equipos_list = list(self.equipos.all())
+        num_equipos = len(equipos_list)
+        
+        if num_equipos < 2:
+            raise ValidationError('Se necesitan al menos 2 equipos para generar el fixture.')
+        
+        # Verificar que sea potencia de 2 (2, 4, 8, 16, etc.)
+        import math
+        if num_equipos & (num_equipos - 1) != 0:
+            raise ValidationError(f'El número de equipos debe ser potencia de 2 (2, 4, 8, 16...). Tienes {num_equipos} equipos.')
+        
+        # Eliminar partidos anteriores si existen
+        self.partidos.all().delete()
+        
+        # Calcular número de rondas
+        num_rondas = int(math.log2(num_equipos))
+        
+        # Crear primera ronda
+        import random
+        random.shuffle(equipos_list)
+        
+        ronda = 1
+        for i in range(0, num_equipos, 2):
+            Partido.objects.create(
+                torneo=self,
+                equipo1=equipos_list[i],
+                equipo2=equipos_list[i + 1],
+                ronda=ronda,
+                numero_partido=(i // 2) + 1
+            )
+        
+        # Cambiar estado del torneo
+        self.estado = 'EN_CURSO'
+        self.save()
+    
     class Meta:
         verbose_name = "Torneo"
         verbose_name_plural = "Torneos"
         ordering = ['-fecha_inicio']
+
+class Equipo(models.Model):
+    """Modelo para gestionar equipos independientes"""
+    nombre = models.CharField(max_length=150, unique=True, help_text="Nombre del equipo")
+    capitan = models.ForeignKey(
+        Cliente, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="equipos_capitaneados",
+        help_text="Capitán del equipo"
+    )
+    jugadores = models.ManyToManyField(
+        Cliente, 
+        blank=True, 
+        related_name="equipos",
+        help_text="Jugadores del equipo"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    activo = models.BooleanField(default=True, help_text="Equipo activo")
+    logo = models.CharField(
+        max_length=10, 
+        blank=True, 
+        null=True,
+        help_text="Emoji o icono para el equipo (opcional)"
+    )
+    
+    def __str__(self):
+        return self.nombre
+    
+    def clean(self):
+        """Validaciones del equipo"""
+        super().clean()
+        
+        # Validar nombre único
+        if self.pk:
+            if Equipo.objects.filter(nombre__iexact=self.nombre).exclude(pk=self.pk).exists():
+                raise ValidationError({
+                    'nombre': f'Ya existe un equipo con el nombre "{self.nombre}".'
+                })
+    
+    def jugadores_count(self):
+        """Retorna la cantidad de jugadores en el equipo"""
+        return self.jugadores.count()
+    
+    def torneos_activos(self):
+        """Retorna los torneos activos en los que participa"""
+        return self.torneos.filter(activo=True)
+    
+    class Meta:
+        verbose_name = "Equipo"
+        verbose_name_plural = "Equipos"
+        ordering = ['nombre']
+
+class Partido(models.Model):
+    """Modelo para representar un partido del torneo (eliminación directa)"""
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('FINALIZADO', 'Finalizado'),
+        ('WALKOVER', 'Walkover'),  # Un equipo no se presentó
+    ]
+    
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='partidos')
+    ronda = models.PositiveIntegerField(help_text="Ronda del torneo (1=Primera ronda, 2=Semifinal, etc.)")
+    numero_partido = models.PositiveIntegerField(help_text="Número de partido dentro de la ronda")
+    
+    equipo1 = models.ForeignKey(
+        Equipo, 
+        on_delete=models.CASCADE, 
+        related_name='partidos_como_equipo1',
+        null=True,
+        blank=True,
+        help_text="Primer equipo (puede ser null si viene de un partido anterior)"
+    )
+    equipo2 = models.ForeignKey(
+        Equipo, 
+        on_delete=models.CASCADE, 
+        related_name='partidos_como_equipo2',
+        null=True,
+        blank=True,
+        help_text="Segundo equipo (puede ser null si viene de un partido anterior)"
+    )
+    
+    resultado_equipo1 = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text="Resultado del equipo 1"
+    )
+    resultado_equipo2 = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text="Resultado del equipo 2"
+    )
+    
+    ganador = models.ForeignKey(
+        Equipo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='partidos_ganados',
+        help_text="Equipo ganador"
+    )
+    
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    fecha_hora = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora del partido")
+    observaciones = models.TextField(blank=True, null=True)
+    
+    # Para saber de qué partidos vienen los equipos (en rondas posteriores)
+    partido_anterior_equipo1 = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='siguiente_partido_ganador1'
+    )
+    partido_anterior_equipo2 = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='siguiente_partido_ganador2'
+    )
+    
+    def __str__(self):
+        e1 = self.equipo1.nombre if self.equipo1 else 'TBD'
+        e2 = self.equipo2.nombre if self.equipo2 else 'TBD'
+        return f"{self.torneo.nombre} - Ronda {self.ronda} - {e1} vs {e2}"
+    
+    def clean(self):
+        """Validaciones del partido"""
+        super().clean()
+        
+        # Si hay resultados, ambos deben estar presentes
+        if (self.resultado_equipo1 is not None) != (self.resultado_equipo2 is not None):
+            raise ValidationError('Debe ingresar el resultado de ambos equipos.')
+        
+        # Si hay resultados, debe haber un ganador
+        if self.resultado_equipo1 is not None and self.resultado_equipo2 is not None:
+            if self.resultado_equipo1 == self.resultado_equipo2:
+                raise ValidationError('No puede haber empate en eliminación directa. Debe haber un ganador.')
+            
+            # Determinar ganador automáticamente
+            if self.resultado_equipo1 > self.resultado_equipo2:
+                self.ganador = self.equipo1
+            else:
+                self.ganador = self.equipo2
+            
+            self.estado = 'FINALIZADO'
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        
+        # Si este partido tiene ganador, actualizar el siguiente partido
+        if self.ganador and self.estado == 'FINALIZADO':
+            self.avanzar_ganador()
+    
+    def avanzar_ganador(self):
+        """Avanza al ganador a la siguiente ronda"""
+        # Buscar el partido de la siguiente ronda
+        siguiente_ronda = self.ronda + 1
+        numero_siguiente = (self.numero_partido + 1) // 2
+        
+        try:
+            siguiente_partido = Partido.objects.get(
+                torneo=self.torneo,
+                ronda=siguiente_ronda,
+                numero_partido=numero_siguiente
+            )
+            
+            # Determinar si va como equipo1 o equipo2
+            if self.numero_partido % 2 == 1:  # Impar -> equipo1
+                siguiente_partido.equipo1 = self.ganador
+                siguiente_partido.partido_anterior_equipo1 = self
+            else:  # Par -> equipo2
+                siguiente_partido.equipo2 = self.ganador
+                siguiente_partido.partido_anterior_equipo2 = self
+            
+            siguiente_partido.save()
+        except Partido.DoesNotExist:
+            # Es la final, no hay siguiente partido
+            pass
+    
+    def nombre_ronda(self):
+        """Retorna el nombre de la ronda"""
+        total_equipos = self.torneo.equipos.count()
+        import math
+        total_rondas = int(math.log2(total_equipos)) if total_equipos > 0 else 0
+        
+        if self.ronda == total_rondas:
+            return "Final"
+        elif self.ronda == total_rondas - 1:
+            return "Semifinal"
+        elif self.ronda == total_rondas - 2:
+            return "Cuartos de Final"
+        else:
+            return f"Ronda {self.ronda}"
+    
+    def get_ronda_display(self):
+        """Alias de nombre_ronda para compatibilidad con templates"""
+        return self.nombre_ronda()
+    
+    @property
+    def siguiente_partido(self):
+        """Obtiene el partido de la siguiente ronda al que avanzará el ganador"""
+        siguiente_ronda = self.ronda + 1
+        numero_siguiente = (self.numero_partido + 1) // 2
+        
+        try:
+            return Partido.objects.get(
+                torneo=self.torneo,
+                ronda=siguiente_ronda,
+                numero_partido=numero_siguiente
+            )
+        except Partido.DoesNotExist:
+            return None
+    
+    class Meta:
+        verbose_name = "Partido"
+        verbose_name_plural = "Partidos"
+        ordering = ['torneo', 'ronda', 'numero_partido']
+        unique_together = ('torneo', 'ronda', 'numero_partido')
 
 # --- Modelos Transaccionales ---
 
 class Reserva(models.Model):
     ESTADO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
-        ('CONFIRMADA', 'Confirmada'),
+        ('PAGADA', 'Pagada'),
         ('CANCELADA', 'Cancelada'),
     ]
 
@@ -274,10 +555,10 @@ class Reserva(models.Model):
             })
         
         # 6. Validar disponibilidad de la cancha (solo si no está cancelada)
-        if self.estado in ['PENDIENTE', 'CONFIRMADA'] and self.cancha_id:
+        if self.estado in ['PENDIENTE', 'PAGADA'] and self.cancha_id:
             reservas_conflicto = Reserva.objects.filter(
                 cancha=self.cancha,
-                estado__in=['PENDIENTE', 'CONFIRMADA']
+                estado__in=['PENDIENTE', 'PAGADA']
             ).filter(
                 models.Q(fecha_hora_inicio__lt=self.fecha_hora_fin) & 
                 models.Q(fecha_hora_fin__gt=self.fecha_hora_inicio)
@@ -358,7 +639,8 @@ class Pago(models.Model):
     monto_total = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
-        validators=[MinValueValidator(0)]
+        validators=[MinValueValidator(0), MaxValueValidator(999999.99)],
+        help_text="Monto total del pago (máximo: $999,999.99)"
     )
     fecha_pago = models.DateTimeField(null=True, blank=True)
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, null=True, blank=True)
@@ -403,7 +685,7 @@ class Pago(models.Model):
         
         # Actualizar estado de la reserva
         if self.reserva.estado == 'PENDIENTE':
-            self.reserva.estado = 'CONFIRMADA'
+            self.reserva.estado = 'PAGADA'
             self.reserva.save()
     
     class Meta:

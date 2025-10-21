@@ -1,0 +1,276 @@
+{% extends "reservas/base.html" %}
+
+{% block title %}Registrar Resultado - {{ partido.torneo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs mb-6">
+        <ul>
+            <li><a href="{% url 'home' %}">Inicio</a></li>
+            <li><a href="{% url 'torneo_lista' %}">Torneos</a></li>
+            <li><a href="{% url 'torneo_detalle' torneo.pk %}">{{ torneo.nombre }}</a></li>
+            <li><a href="{% url 'torneo_fixture' torneo.pk %}">Fixture</a></li>
+            <li>Registrar Resultado</li>
+        </ul>
+    </div>
+
+    <!-- Header -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h1 class="card-title text-3xl mb-2">
+                📝 Registrar Resultado del Partido
+            </h1>
+            <div class="flex gap-2 items-center">
+                <span class="badge badge-lg badge-primary">{{ torneo.nombre }}</span>
+                <span class="badge badge-lg badge-ghost">Partido #{{ partido.numero_partido }}</span>
+                {% if partido.ronda == torneo.partidos.values_list('ronda', flat=True).distinct|length %}
+                    <span class="badge badge-lg badge-warning">FINAL</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Contexto -->
+    <div class="alert alert-info mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <p class="font-bold">Sistema de eliminación directa</p>
+            <p class="text-sm">El equipo ganador avanzará automáticamente a la siguiente ronda. No puede haber empates.</p>
+        </div>
+    </div>
+
+    <!-- Formulario de Resultado -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-xl mb-6">Enfrentamiento</h2>
+
+            <form method="post" id="resultadoForm">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Equipo 1 -->
+                    <div class="card bg-base-200">
+                        <div class="card-body">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-full w-12">
+                                        <span class="text-xl">{{ partido.equipo1.nombre|slice:":1" }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">{{ partido.equipo1.nombre }}</h3>
+                                    <p class="text-sm opacity-70">{{ partido.equipo1.jugadores.count }} jugadores</p>
+                                </div>
+                            </div>
+
+                            <!-- Jugadores -->
+                            <div class="divider my-2">Jugadores</div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                {% for jugador in partido.equipo1.jugadores.all %}
+                                    <div class="badge badge-outline">
+                                        {{ jugador.nombre }} {{ jugador.apellido }}
+                                        {% if jugador == partido.equipo1.capitan %}
+                                            <span class="ml-1">👑</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Input de Resultado -->
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-bold">Puntos anotados</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    name="resultado_equipo1" 
+                                    id="resultado_equipo1"
+                                    min="0" 
+                                    required 
+                                    class="input input-bordered input-lg text-center text-3xl font-bold"
+                                    placeholder="0"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Equipo 2 -->
+                    <div class="card bg-base-200">
+                        <div class="card-body">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-secondary text-secondary-content rounded-full w-12">
+                                        <span class="text-xl">{{ partido.equipo2.nombre|slice:":1" }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">{{ partido.equipo2.nombre }}</h3>
+                                    <p class="text-sm opacity-70">{{ partido.equipo2.jugadores.count }} jugadores</p>
+                                </div>
+                            </div>
+
+                            <!-- Jugadores -->
+                            <div class="divider my-2">Jugadores</div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                {% for jugador in partido.equipo2.jugadores.all %}
+                                    <div class="badge badge-outline">
+                                        {{ jugador.nombre }} {{ jugador.apellido }}
+                                        {% if jugador == partido.equipo2.capitan %}
+                                            <span class="ml-1">👑</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Input de Resultado -->
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-bold">Puntos anotados</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    name="resultado_equipo2" 
+                                    id="resultado_equipo2"
+                                    min="0" 
+                                    required 
+                                    class="input input-bordered input-lg text-center text-3xl font-bold"
+                                    placeholder="0"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advertencia de empate -->
+                <div id="empateWarning" class="alert alert-error hidden mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span><strong>Error:</strong> No puede haber empate en eliminación directa. Un equipo debe ganar.</span>
+                </div>
+
+                <!-- Preview del ganador -->
+                <div id="ganadorPreview" class="card bg-success/10 border-2 border-success hidden mb-6">
+                    <div class="card-body py-4">
+                        <div class="flex items-center gap-4">
+                            <span class="text-4xl">🏆</span>
+                            <div>
+                                <p class="text-sm opacity-70">Ganador del partido:</p>
+                                <p class="text-2xl font-bold text-success" id="ganadorNombre"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="card-actions justify-between">
+                    <a href="{% url 'torneo_fixture' torneo.pk %}" class="btn btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Confirmar Resultado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    {% if partido.siguiente_partido %}
+        <div class="alert alert-info mt-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>El equipo ganador avanzará al <strong>Partido #{{ partido.siguiente_partido.numero_partido }}</strong> en la siguiente ronda.</span>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resultado1 = document.getElementById('resultado_equipo1');
+    const resultado2 = document.getElementById('resultado_equipo2');
+    const empateWarning = document.getElementById('empateWarning');
+    const ganadorPreview = document.getElementById('ganadorPreview');
+    const ganadorNombre = document.getElementById('ganadorNombre');
+    const submitBtn = document.getElementById('submitBtn');
+    const equipo1Nombre = "{{ partido.equipo1.nombre }}";
+    const equipo2Nombre = "{{ partido.equipo2.nombre }}";
+
+    function validarResultado() {
+        const val1 = parseInt(resultado1.value);
+        const val2 = parseInt(resultado2.value);
+
+        if (isNaN(val1) || isNaN(val2)) {
+            // No hay valores completos
+            empateWarning.classList.add('hidden');
+            ganadorPreview.classList.add('hidden');
+            submitBtn.disabled = true;
+            return;
+        }
+
+        if (val1 < 0 || val2 < 0) {
+            empateWarning.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span><strong>Error:</strong> Los puntos no pueden ser negativos.</span>
+            `;
+            empateWarning.classList.remove('hidden');
+            ganadorPreview.classList.add('hidden');
+            submitBtn.disabled = true;
+            return;
+        }
+
+        if (val1 === val2) {
+            // Empate
+            empateWarning.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span><strong>Error:</strong> No puede haber empate en eliminación directa. Un equipo debe ganar.</span>
+            `;
+            empateWarning.classList.remove('hidden');
+            ganadorPreview.classList.add('hidden');
+            submitBtn.disabled = true;
+        } else {
+            // Hay ganador
+            empateWarning.classList.add('hidden');
+            ganadorPreview.classList.remove('hidden');
+            
+            if (val1 > val2) {
+                ganadorNombre.textContent = equipo1Nombre + ' (' + val1 + ' - ' + val2 + ')';
+            } else {
+                ganadorNombre.textContent = equipo2Nombre + ' (' + val2 + ' - ' + val1 + ')';
+            }
+            
+            submitBtn.disabled = false;
+        }
+    }
+
+    resultado1.addEventListener('input', validarResultado);
+    resultado2.addEventListener('input', validarResultado);
+
+    // Prevenir envío si hay empate
+    document.getElementById('resultadoForm').addEventListener('submit', function(e) {
+        const val1 = parseInt(resultado1.value);
+        const val2 = parseInt(resultado2.value);
+        
+        if (val1 === val2) {
+            e.preventDefault();
+            empateWarning.classList.remove('hidden');
+            submitBtn.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

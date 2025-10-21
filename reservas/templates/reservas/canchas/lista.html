@@ -5,8 +5,12 @@
 {% block content %}
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h2 class="card-title text-3xl">🏟️ Canchas Disponibles</h2>
+        <!-- Header -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div class="flex items-center gap-3">
+                <h2 class="card-title text-3xl">🏟️ Canchas</h2>
+                <span class="badge badge-lg badge-primary">{{ canchas|length }} total</span>
+            </div>
             <a href="{% url 'cancha_crear' %}" class="btn btn-primary gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -14,66 +18,132 @@
                 Nueva Cancha
             </a>
         </div>
-        
+
+        <!-- Búsqueda y filtros -->
         {% if canchas %}
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <div class="form-control flex-1">
+                <div class="input-group">
+                    <span class="bg-base-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Buscar por nombre o tipo..." 
+                        class="input input-bordered w-full" 
+                    />
+                </div>
+            </div>
+            <button id="clearSearch" class="btn btn-ghost btn-sm hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpiar
+            </button>
+        </div>
+
+        <!-- Contador -->
+        <div class="flex justify-between items-center mb-3">
+            <span class="text-sm text-base-content/60">
+                Mostrando <span id="showingCount">{{ canchas|length }}</span> de <span id="totalCount">{{ canchas|length }}</span> canchas
+            </span>
+        </div>
+        
+        <!-- Tabla -->
         <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table id="canchasTable" class="table w-full table-compact">
                 <thead>
-                    <tr>
-                        <th class="bg-primary text-primary-content">ID</th>
-                        <th class="bg-primary text-primary-content">Nombre</th>
-                        <th class="bg-primary text-primary-content">Tipo</th>
-                        <th class="bg-primary text-primary-content">Precio por Hora</th>
-                        <th class="bg-primary text-primary-content">Acciones</th>
+                    <tr class="bg-base-200">
+                        <th class="w-12">#</th>
+                        <th>Cancha</th>
+                        <th class="hidden sm:table-cell">Tipo</th>
+                        <th class="hidden md:table-cell">Precio/Hora</th>
+                        <th class="hidden lg:table-cell">Capacidad</th>
+                        <th class="hidden xl:table-cell">Estado</th>
+                        <th class="w-24 text-right">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="canchasTableBody">
                     {% for cancha in canchas %}
-                    <tr class="hover">
-                        <td class="font-bold">{{ cancha.id }}</td>
+                    <tr class="hover border-b border-base-200 cancha-row" 
+                        data-nombre="{{ cancha.nombre|lower }}"
+                        data-tipo="{{ cancha.tipo_cancha.nombre|lower }}">
+                        <td class="font-mono text-xs text-base-content/60">{{ cancha.id }}</td>
                         <td>
-                            <div class="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                </svg>
-                                <span class="font-semibold">{{ cancha.nombre }}</span>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar placeholder">
+                                    <div class="bg-success text-success-content rounded-lg w-10 h-10">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-base truncate">{{ cancha.nombre }}</div>
+                                    <div class="text-sm text-base-content/60 sm:hidden">{{ cancha.tipo_cancha.nombre }}</div>
+                                </div>
                             </div>
                         </td>
-                        <td><span class="badge badge-info badge-lg">{{ cancha.tipo_cancha.nombre }}</span></td>
-                        <td>
-                            <span class="text-success font-bold">${{ cancha.precio_por_hora }}</span>
+                        <td class="hidden sm:table-cell">
+                            <span class="badge badge-info badge-sm">{{ cancha.tipo_cancha.nombre }}</span>
+                        </td>
+                        <td class="hidden md:table-cell">
+                            <span class="font-bold text-success">${{ cancha.precio_por_hora|floatformat:0 }}</span>
+                        </td>
+                        <td class="hidden lg:table-cell">
+                            <span class="badge badge-ghost badge-sm">{{ cancha.capacidad_personas }} personas</span>
+                        </td>
+                        <td class="hidden xl:table-cell">
+                            {% if cancha.activa %}
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Activa
+                                </span>
+                            {% else %}
+                                <span class="badge badge-error badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                    Inactiva
+                                </span>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="dropdown dropdown-end">
-                                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                <label tabindex="0" class="btn btn-ghost btn-sm" style="color: #1e3a8a !important;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
                                     </svg>
                                 </label>
-                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                                <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-box w-52 border-2 border-gray-200 z-50">
                                     <li>
-                                        <a href="{% url 'cancha_detalle' cancha.id %}" class="text-info">
+                                        <a href="{% url 'cancha_detalle' cancha.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
-                                            Ver Detalles
+                                            Ver detalles
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'cancha_editar' cancha.id %}" class="text-warning">
+                                        <a href="{% url 'cancha_editar' cancha.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
-                                            Editar Cancha
+                                            Editar
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'cancha_eliminar' cancha.id %}" class="text-error">
+                                        <a href="{% url 'cancha_eliminar' cancha.id %}" class="gap-2 text-error hover:bg-red-50">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
-                                            Eliminar Cancha
+                                            Eliminar
                                         </a>
                                     </li>
                                 </ul>
@@ -84,6 +154,43 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Paginación -->
+        {% if canchas.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <div class="btn-group">
+                {% if canchas.has_previous %}
+                    <a href="?page=1" class="btn btn-sm">«</a>
+                    <a href="?page={{ canchas.previous_page_number }}" class="btn btn-sm">‹</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">«</button>
+                    <button class="btn btn-sm btn-disabled">‹</button>
+                {% endif %}
+                
+                <button class="btn btn-sm btn-active">Página {{ canchas.number }} de {{ canchas.paginator.num_pages }}</button>
+                
+                {% if canchas.has_next %}
+                    <a href="?page={{ canchas.next_page_number }}" class="btn btn-sm">›</a>
+                    <a href="?page={{ canchas.paginator.num_pages }}" class="btn btn-sm">»</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">›</button>
+                    <button class="btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="text-center mt-2 text-sm text-base-content/60">
+            Mostrando {{ canchas.start_index }} - {{ canchas.end_index }} de {{ canchas.paginator.count }} canchas
+        </div>
+        {% endif %}
+
+        <!-- Sin resultados -->
+        <div id="noResults" class="text-center py-12 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p class="text-lg text-base-content/60">No se encontraron canchas</p>
+        </div>
+
         {% else %}
         <div class="text-center py-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,6 +203,7 @@
     </div>
 </div>
 
+<!-- Tipos de Cancha -->
 {% if tipos_cancha %}
 <div class="card bg-base-100 shadow-xl mt-6">
     <div class="card-body">
@@ -103,11 +211,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
-            Tipos de Cancha Disponibles
+            Tipos de Cancha
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {% for tipo in tipos_cancha %}
-            <div class="card bg-gradient-to-br from-base-200 to-base-300 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div class="card bg-gradient-to-br from-base-200 to-base-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                 <div class="card-body p-6">
                     <h4 class="text-lg font-bold text-primary mb-2">{{ tipo.nombre }}</h4>
                     <div class="text-4xl font-bold text-primary mb-3">{{ tipo.canchas.count }}</div>
@@ -119,4 +227,48 @@
     </div>
 </div>
 {% endif %}
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const canchasTable = document.getElementById('canchasTable');
+    const canchaRows = document.querySelectorAll('.cancha-row');
+    const noResults = document.getElementById('noResults');
+    const showingCount = document.getElementById('showingCount');
+
+    // Búsqueda
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            clearSearch.classList.toggle('hidden', searchTerm.length === 0);
+
+            canchaRows.forEach(row => {
+                const nombre = row.dataset.nombre || '';
+                const tipo = row.dataset.tipo || '';
+                const matches = nombre.includes(searchTerm) || tipo.includes(searchTerm);
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            showingCount.textContent = visibleCount;
+            noResults.classList.toggle('hidden', visibleCount > 0);
+            canchasTable.classList.toggle('hidden', visibleCount === 0);
+        });
+    }
+
+    // Limpiar
+    if (clearSearch) {
+        clearSearch.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+    }
+});
+</script>
 {% endblock %}

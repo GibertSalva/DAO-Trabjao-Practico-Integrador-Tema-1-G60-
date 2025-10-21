@@ -135,7 +135,7 @@
                                     <td>{{ reserva.fecha_hora_inicio|date:"H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}</td>
                                     <td>{{ reserva.cancha.nombre }}</td>
                                     <td>
-                                        {% if reserva.estado == 'CONFIRMADA' %}
+                                        {% if reserva.estado == 'PAGADA' %}
                                         <span class="badge badge-success">{{ reserva.estado }}</span>
                                         {% elif reserva.estado == 'PENDIENTE' %}
                                         <span class="badge badge-warning">{{ reserva.estado }}</span>
@@ -214,7 +214,7 @@
                                     <td>{{ reserva.fecha_hora_inicio|date:"H:i" }} - {{ reserva.fecha_hora_fin|date:"H:i" }}</td>
                                     <td>{{ reserva.cliente.nombre }} {{ reserva.cliente.apellido }}</td>
                                     <td>
-                                        {% if reserva.estado == 'CONFIRMADA' %}
+                                        {% if reserva.estado == 'PAGADA' %}
                                         <span class="badge badge-success">{{ reserva.estado }}</span>
                                         {% elif reserva.estado == 'PENDIENTE' %}
                                         <span class="badge badge-warning">{{ reserva.estado }}</span>
@@ -256,12 +256,12 @@
             <table class="table table-zebra w-full">
                 <thead>
                     <tr>
-                        <th class="bg-primary text-primary-content">Posición</th>
-                        <th class="bg-primary text-primary-content">Cancha</th>
-                        <th class="bg-primary text-primary-content">Tipo</th>
-                        <th class="bg-primary text-primary-content">Reservas</th>
-                        <th class="bg-primary text-primary-content">Total Horas</th>
-                        <th class="bg-primary text-primary-content">Ingresos</th>
+                        <th class="bg-gray-100 text-primary">Posición</th>
+                        <th class="bg-gray-100 text-primary">Cancha</th>
+                        <th class="bg-gray-100 text-primary">Tipo</th>
+                        <th class="bg-gray-100 text-primary">Reservas</th>
+                        <th class="bg-gray-100 text-primary">Total Horas</th>
+                        <th class="bg-gray-100 text-primary">Ingresos</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -322,18 +322,24 @@
         {% if meses_data %}
         <div class="space-y-6">
             <!-- Gráfico de barras con CSS -->
-            <div class="grid grid-cols-6 gap-4 items-end h-64 p-4 bg-base-200 rounded-lg">
-                {% for mes_item in meses_data %}
-                <div class="flex flex-col items-center gap-2">
-                    <div class="text-sm font-bold text-primary">{{ mes_item.total_reservas }}</div>
-                    <div class="w-full bg-primary rounded-t-lg transition-all hover:bg-primary-focus" 
-                         style="height: {% if mes_item.total_reservas > 0 %}{{ mes_item.total_reservas|floatformat:0 }}0%{% else %}5%{% endif %}; min-height: 20px;">
+            <div class="bg-white p-6 rounded-lg border-2 border-gray-200">
+                <div class="grid grid-cols-6 gap-4 items-end h-80">
+                    {% for mes_item in meses_data %}
+                    {% if forloop.first %}
+                        {% with max_reservas=mes_item.total_reservas %}
+                        {% endwith %}
+                    {% endif %}
+                    <div class="flex flex-col items-center gap-2 h-full justify-end">
+                        <div class="text-sm font-bold text-primary mb-1">{{ mes_item.total_reservas }}</div>
+                        <div class="w-full bg-gradient-to-t from-primary to-accent rounded-t-lg transition-all hover:opacity-80 shadow-lg" 
+                             style="height: {% if mes_item.total_reservas > 0 %}calc({{ mes_item.porcentaje|default:10 }}% * 0.85){% else %}5%{% endif %}; min-height: 30px; max-height: 85%;">
+                        </div>
+                        <div class="text-xs font-semibold text-center text-gray-700 mt-2">
+                            {{ mes_item.mes }}<br>{{ mes_item.anio }}
+                        </div>
                     </div>
-                    <div class="text-xs font-semibold text-center">
-                        {{ mes_item.mes }}<br>{{ mes_item.anio }}
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             
             <!-- Tabla de datos -->
@@ -341,10 +347,10 @@
                 <table class="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th class="bg-primary text-primary-content">Mes</th>
-                            <th class="bg-primary text-primary-content">Año</th>
-                            <th class="bg-primary text-primary-content">Total Reservas</th>
-                            <th class="bg-primary text-primary-content">Total Horas</th>
+                            <th class="bg-gray-100 text-primary">Mes</th>
+                            <th class="bg-gray-100 text-primary">Año</th>
+                            <th class="bg-gray-100 text-primary">Total Reservas</th>
+                            <th class="bg-gray-100 text-primary">Total Horas</th>
                         </tr>
                     </thead>
                     <tbody>

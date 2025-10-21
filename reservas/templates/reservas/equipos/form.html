@@ -1,0 +1,147 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}{% if equipo %}Editar{% else %}Crear{% endif %} Equipo - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="text-sm breadcrumbs mb-4">
+    <ul>
+        <li><a href="{% url 'home' %}">Inicio</a></li>
+        <li><a href="{% url 'equipo_lista' %}">Equipos</a></li>
+        <li>{% if equipo %}Editar{% else %}Crear{% endif %}</li>
+    </ul>
+</div>
+
+<div class="card bg-base-100 shadow-xl max-w-4xl mx-auto">
+    <div class="card-body">
+        <h2 class="card-title text-3xl mb-6">
+            {% if equipo %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editar Equipo: {{ equipo.nombre }}
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Crear Nuevo Equipo
+            {% endif %}
+        </h2>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Información Básica -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text font-semibold">Nombre del Equipo *</span>
+                    </label>
+                    <input type="text" name="nombre" class="input input-bordered w-full" 
+                           value="{% if equipo %}{{ equipo.nombre }}{% endif %}" 
+                           placeholder="Ej: Los Tigres" required>
+                    <label class="label">
+                        <span class="label-text-alt">Nombre único del equipo</span>
+                    </label>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Logo/Emoji (Opcional)</span>
+                    </label>
+                    <input type="text" name="logo" class="input input-bordered w-full" 
+                           value="{% if equipo %}{{ equipo.logo }}{% endif %}" 
+                           placeholder="⚽ 🏀 🏐" maxlength="10">
+                    <label class="label">
+                        <span class="label-text-alt">Un emoji o símbolo para el equipo</span>
+                    </label>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" name="activo" class="checkbox checkbox-primary" 
+                               {% if not equipo or equipo.activo %}checked{% endif %}>
+                        <span class="label-text font-semibold">Equipo Activo</span>
+                    </label>
+                    <label class="label">
+                        <span class="label-text-alt">Solo equipos activos pueden inscribirse en torneos</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <!-- Miembros del Equipo -->
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Miembros del Equipo
+            </h3>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Capitán (Opcional)</span>
+                </label>
+                <select name="capitan" class="select select-bordered w-full">
+                    <option value="">Sin capitán asignado</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" 
+                            {% if equipo and equipo.capitan and equipo.capitan.id == cliente.id %}selected{% endif %}>
+                        {{ cliente.nombre }} {{ cliente.apellido }} - DNI: {{ cliente.dni }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not clientes %}
+                <label class="label">
+                    <span class="label-text-alt text-warning">
+                        ⚠️ No hay clientes activos. <a href="{% url 'cliente_crear' %}" class="link link-primary">Crear uno</a>
+                    </span>
+                </label>
+                {% endif %}
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Jugadores (Opcional)</span>
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-base-200 rounded-box max-h-96 overflow-y-auto">
+                    {% for cliente in clientes %}
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="checkbox" name="jugadores" value="{{ cliente.id }}" 
+                               class="checkbox checkbox-primary"
+                               {% if equipo and cliente in equipo.jugadores.all %}checked{% endif %}>
+                        <span class="label-text">
+                            {{ cliente.nombre }} {{ cliente.apellido }}
+                            <span class="text-xs text-base-content/60">(DNI: {{ cliente.dni }})</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if clientes %}
+                <label class="label">
+                    <span class="label-text-alt">Selecciona los jugadores que formarán parte del equipo</span>
+                </label>
+                {% endif %}
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="flex gap-3 justify-end">
+                <a href="{% url 'equipo_lista' %}" class="btn btn-ghost gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {% if equipo %}Guardar Cambios{% else %}Crear Equipo{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

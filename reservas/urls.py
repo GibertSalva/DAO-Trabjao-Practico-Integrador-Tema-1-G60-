@@ -31,6 +31,7 @@ urlpatterns = [
     path('reservas/<int:pk>/', views.reserva_detalle, name='reserva_detalle'),
     path('reservas/<int:pk>/editar/', views.reserva_editar, name='reserva_editar'),
     path('reservas/<int:pk>/eliminar/', views.reserva_eliminar, name='reserva_eliminar'),
+    path('reservas/<int:pk>/marcar-pagada/', views.reserva_marcar_pagada, name='reserva_marcar_pagada'),
     
     # URLs de Torneos
     path('torneos/', views.torneo_lista, name='torneo_lista'),
@@ -38,4 +39,18 @@ urlpatterns = [
     path('torneos/<int:pk>/', views.torneo_detalle, name='torneo_detalle'),
     path('torneos/<int:pk>/editar/', views.torneo_editar, name='torneo_editar'),
     path('torneos/<int:pk>/eliminar/', views.torneo_eliminar, name='torneo_eliminar'),
+    path('torneos/<int:pk>/inscribir/', views.torneo_inscribir_equipo, name='torneo_inscribir_equipo'),
+    path('torneos/<int:pk>/desinscribir/<int:equipo_pk>/', views.torneo_desinscribir_equipo, name='torneo_desinscribir_equipo'),
+    path('torneos/<int:pk>/generar-fixture/', views.torneo_generar_fixture, name='torneo_generar_fixture'),
+    path('torneos/<int:pk>/fixture/', views.torneo_fixture, name='torneo_fixture'),
+    
+    # URLs de Equipos (independientes)
+    path('equipos/', views.equipo_lista, name='equipo_lista'),
+    path('equipos/crear/', views.equipo_crear, name='equipo_crear'),
+    path('equipos/<int:pk>/', views.equipo_detalle, name='equipo_detalle'),
+    path('equipos/<int:pk>/editar/', views.equipo_editar, name='equipo_editar'),
+    path('equipos/<int:pk>/eliminar/', views.equipo_eliminar, name='equipo_eliminar'),
+    
+    # URLs de Partidos
+    path('partidos/<int:pk>/registrar-resultado/', views.partido_registrar_resultado, name='partido_registrar_resultado'),
 ]
