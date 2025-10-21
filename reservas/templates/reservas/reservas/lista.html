@@ -199,19 +199,6 @@ window.addEventListener('pageshow', function(event) {
                                             Ver detalles
                                         </a>
                                     </li>
-                                    {% if reserva.estado == 'PENDIENTE' %}
-                                    <li>
-                                        <form method="POST" action="{% url 'reserva_marcar_pagada' reserva.id %}" style="margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="gap-2 text-green-700 hover:bg-green-50 w-full text-left">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                Marcar como pagada
-                                            </button>
-                                        </form>
-                                    </li>
-                                    {% endif %}
                                     <li>
                                         <a href="{% url 'reserva_editar' reserva.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
