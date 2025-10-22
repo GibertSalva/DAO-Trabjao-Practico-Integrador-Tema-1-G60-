@@ -259,20 +259,6 @@ class Torneo(models.Model):
 class Equipo(models.Model):
     """Modelo para gestionar equipos independientes"""
     nombre = models.CharField(max_length=150, unique=True, help_text="Nombre del equipo")
-    capitan = models.ForeignKey(
-        Cliente, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name="equipos_capitaneados",
-        help_text="Capitán del equipo"
-    )
-    jugadores = models.ManyToManyField(
-        Cliente, 
-        blank=True, 
-        related_name="equipos",
-        help_text="Jugadores del equipo"
-    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True, help_text="Equipo activo")
     logo = models.CharField(
@@ -295,10 +281,6 @@ class Equipo(models.Model):
                 raise ValidationError({
                     'nombre': f'Ya existe un equipo con el nombre "{self.nombre}".'
                 })
-    
-    def jugadores_count(self):
-        """Retorna la cantidad de jugadores en el equipo"""
-        return self.jugadores.count()
     
     def torneos_activos(self):
         """Retorna los torneos activos en los que participa"""

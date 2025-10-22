@@ -1079,7 +1079,7 @@ def partido_registrar_resultado(request, pk):
 
 def equipo_lista(request):
     """Listar todos los equipos con paginación"""
-    equipos_list = Equipo.objects.all().prefetch_related('jugadores', 'capitan', 'torneos')
+    equipos_list = Equipo.objects.all().prefetch_related('torneos')
     
     # Paginación: 10 equipos por página
     paginator = Paginator(equipos_list, 10)
@@ -1107,10 +1107,7 @@ def equipo_crear(request):
             # Validar nombre único
             if Equipo.objects.filter(nombre__iexact=nombre).exists():
                 messages.error(request, f'Ya existe un equipo con el nombre "{nombre}".')
-                clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
-                return render(request, 'reservas/equipos/form.html', {
-                    'clientes': clientes
-                })
+                return render(request, 'reservas/equipos/form.html', {})
             
             equipo = Equipo.objects.create(
                 nombre=nombre,
@@ -1118,27 +1115,13 @@ def equipo_crear(request):
                 activo=request.POST.get('activo') == 'on'
             )
             
-            # Asignar capitán si se seleccionó
-            capitan_id = request.POST.get('capitan')
-            if capitan_id:
-                equipo.capitan_id = capitan_id
-                equipo.save()
-            
-            # Asignar jugadores
-            jugadores_ids = request.POST.getlist('jugadores')
-            if jugadores_ids:
-                equipo.jugadores.set(jugadores_ids)
-            
             messages.success(request, f'Equipo "{equipo.nombre}" creado exitosamente.')
             return redirect('equipo_lista')
             
         except Exception as e:
             messages.error(request, f'Error al crear equipo: {str(e)}')
     
-    clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
-    return render(request, 'reservas/equipos/form.html', {
-        'clientes': clientes
-    })
+    return render(request, 'reservas/equipos/form.html', {})
 
 
 def equipo_detalle(request, pk):
@@ -1164,28 +1147,14 @@ def equipo_editar(request, pk):
             # Validar nombre único (excepto el actual)
             if Equipo.objects.filter(nombre__iexact=nombre).exclude(pk=pk).exists():
                 messages.error(request, f'Ya existe otro equipo con el nombre "{nombre}".')
-                clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
                 return render(request, 'reservas/equipos/form.html', {
-                    'equipo': equipo,
-                    'clientes': clientes
+                    'equipo': equipo
                 })
             
             equipo.nombre = nombre
             equipo.logo = request.POST.get('logo', '')
             equipo.activo = request.POST.get('activo') == 'on'
-            
-            # Actualizar capitán
-            capitan_id = request.POST.get('capitan')
-            if capitan_id:
-                equipo.capitan_id = capitan_id
-            else:
-                equipo.capitan = None
-            
             equipo.save()
-            
-            # Actualizar jugadores
-            jugadores_ids = request.POST.getlist('jugadores')
-            equipo.jugadores.set(jugadores_ids)
             
             messages.success(request, f'Equipo "{equipo.nombre}" actualizado exitosamente.')
             return redirect('equipo_detalle', pk=pk)
@@ -1193,10 +1162,8 @@ def equipo_editar(request, pk):
         except Exception as e:
             messages.error(request, f'Error al actualizar equipo: {str(e)}')
     
-    clientes = Cliente.objects.filter(activo=True).order_by('apellido', 'nombre')
     return render(request, 'reservas/equipos/form.html', {
-        'equipo': equipo,
-        'clientes': clientes
+        'equipo': equipo
     })
 
 

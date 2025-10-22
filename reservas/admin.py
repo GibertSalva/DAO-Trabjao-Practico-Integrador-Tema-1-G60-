@@ -99,18 +99,14 @@ class PagoAdmin(admin.ModelAdmin):
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'capitan', 'jugadores_count', 'fecha_creacion', 'activo']
+    list_display = ['nombre', 'fecha_creacion', 'activo']
     list_filter = ['activo', 'fecha_creacion']
-    search_fields = ['nombre', 'capitan__nombre', 'capitan__apellido']
-    filter_horizontal = ['jugadores']
+    search_fields = ['nombre']
     ordering = ['nombre']
     
     fieldsets = (
         ('Información del Equipo', {
             'fields': ('nombre', 'logo', 'activo')
-        }),
-        ('Miembros del Equipo', {
-            'fields': ('capitan', 'jugadores')
         }),
     )
 
