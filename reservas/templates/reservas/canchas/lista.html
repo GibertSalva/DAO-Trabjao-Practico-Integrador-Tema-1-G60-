@@ -21,7 +21,7 @@
 
         <!-- Búsqueda y filtros -->
         {% if canchas %}
-        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <form method="get" class="flex flex-col sm:flex-row gap-3 mb-4">
             <div class="form-control flex-1">
                 <div class="input-group">
                     <span class="bg-base-200">
@@ -31,26 +31,40 @@
                     </span>
                     <input 
                         type="text" 
-                        id="searchInput" 
+                        name="search"
+                        value="{{ search_query }}"
                         placeholder="Buscar por nombre o tipo..." 
                         class="input input-bordered w-full" 
                     />
                 </div>
             </div>
-            <button id="clearSearch" class="btn btn-ghost btn-sm hidden">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Buscar
+            </button>
+            {% if search_query %}
+            <a href="{% url 'cancha_lista' %}" class="btn btn-ghost btn-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 Limpiar
-            </button>
-        </div>
+            </a>
+            {% endif %}
+        </form>
 
-        <!-- Contador -->
-        <div class="flex justify-between items-center mb-3">
-            <span class="text-sm text-base-content/60">
-                Mostrando <span id="showingCount">{{ canchas|length }}</span> de <span id="totalCount">{{ canchas|length }}</span> canchas
-            </span>
+        <!-- Alerta de búsqueda activa -->
+        {% if search_query %}
+        <div class="alert alert-info shadow-lg mb-4">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Se encontraron <strong>{{ canchas.paginator.count }}</strong> resultado(s) para "<strong>{{ search_query }}</strong>"</span>
+            </div>
         </div>
+        {% endif %}
         
         <!-- Tabla -->
         <div class="overflow-x-auto">
@@ -68,9 +82,7 @@
                 </thead>
                 <tbody id="canchasTableBody">
                     {% for cancha in canchas %}
-                    <tr class="hover border-b border-base-200 cancha-row" 
-                        data-nombre="{{ cancha.nombre|lower }}"
-                        data-tipo="{{ cancha.tipo_cancha.nombre|lower }}">
+                    <tr class="hover border-b border-base-200">
                         <td class="font-mono text-xs text-base-content/60">{{ cancha.id }}</td>
                         <td>
                             <div class="flex items-center gap-3">
@@ -160,8 +172,8 @@
         <div class="flex justify-center mt-6">
             <div class="btn-group">
                 {% if canchas.has_previous %}
-                    <a href="?page=1" class="btn btn-sm">«</a>
-                    <a href="?page={{ canchas.previous_page_number }}" class="btn btn-sm">‹</a>
+                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">«</a>
+                    <a href="?page={{ canchas.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">‹</a>
                 {% else %}
                     <button class="btn btn-sm btn-disabled">«</button>
                     <button class="btn btn-sm btn-disabled">‹</button>
@@ -170,8 +182,8 @@
                 <button class="btn btn-sm btn-active">Página {{ canchas.number }} de {{ canchas.paginator.num_pages }}</button>
                 
                 {% if canchas.has_next %}
-                    <a href="?page={{ canchas.next_page_number }}" class="btn btn-sm">›</a>
-                    <a href="?page={{ canchas.paginator.num_pages }}" class="btn btn-sm">»</a>
+                    <a href="?page={{ canchas.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">›</a>
+                    <a href="?page={{ canchas.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">»</a>
                 {% else %}
                     <button class="btn btn-sm btn-disabled">›</button>
                     <button class="btn btn-sm btn-disabled">»</button>
@@ -182,14 +194,6 @@
             Mostrando {{ canchas.start_index }} - {{ canchas.end_index }} de {{ canchas.paginator.count }} canchas
         </div>
         {% endif %}
-
-        <!-- Sin resultados -->
-        <div id="noResults" class="text-center py-12 hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <p class="text-lg text-base-content/60">No se encontraron canchas</p>
-        </div>
 
         {% else %}
         <div class="text-center py-16">
@@ -228,47 +232,5 @@
 </div>
 {% endif %}
 
-<!-- JavaScript -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const clearSearch = document.getElementById('clearSearch');
-    const canchasTable = document.getElementById('canchasTable');
-    const canchaRows = document.querySelectorAll('.cancha-row');
-    const noResults = document.getElementById('noResults');
-    const showingCount = document.getElementById('showingCount');
 
-    // Búsqueda
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            clearSearch.classList.toggle('hidden', searchTerm.length === 0);
-
-            canchaRows.forEach(row => {
-                const nombre = row.dataset.nombre || '';
-                const tipo = row.dataset.tipo || '';
-                const matches = nombre.includes(searchTerm) || tipo.includes(searchTerm);
-
-                row.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-            });
-
-            showingCount.textContent = visibleCount;
-            noResults.classList.toggle('hidden', visibleCount > 0);
-            canchasTable.classList.toggle('hidden', visibleCount === 0);
-        });
-    }
-
-    // Limpiar
-    if (clearSearch) {
-        clearSearch.addEventListener('click', function() {
-            searchInput.value = '';
-            searchInput.dispatchEvent(new Event('input'));
-            searchInput.focus();
-        });
-    }
-});
-</script>
 {% endblock %}

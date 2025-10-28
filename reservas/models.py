@@ -17,14 +17,39 @@ MAX_RESERVAS_POR_CLIENTE_DIA = 3  # Máximo 3 reservas por día por cliente
 # ========== VALIDADORES PERSONALIZADOS ==========
 
 def validar_dni_argentino(value):
-    """Valida que el DNI tenga formato argentino (7-8 dígitos)"""
+    """Valida que el DNI tenga formato argentino (7-8 dígitos) y no sea todo ceros"""
+    # Verificar formato básico
     if not re.match(r'^\d{7,8}$', value):
         raise ValidationError('El DNI debe tener 7 u 8 dígitos numéricos.')
+    
+    # Verificar que no sea todo ceros
+    if value == '0' * len(value):
+        raise ValidationError('El DNI no puede ser todo ceros.')
+    
+    # Verificar que el DNI sea un número válido (mayor a 0)
+    if int(value) == 0:
+        raise ValidationError('El DNI debe ser un número válido mayor a cero.')
 
 def validar_telefono(value):
-    """Valida formato de teléfono argentino"""
+    """Valida formato de teléfono argentino y que no contenga solo símbolos"""
+    # Verificar formato básico
     if not re.match(r'^[\d\s\-\+\(\)]{8,20}$', value):
         raise ValidationError('Ingrese un número de teléfono válido.')
+    
+    # Extraer solo dígitos
+    digitos = re.sub(r'[^\d]', '', value)
+    
+    # Verificar que tenga al menos 8 dígitos numéricos
+    if len(digitos) < 8:
+        raise ValidationError('El teléfono debe contener al menos 8 dígitos.')
+    
+    # Verificar que no sea todo ceros
+    if digitos == '0' * len(digitos):
+        raise ValidationError('El teléfono no puede ser todo ceros.')
+    
+    # Verificar que los dígitos formen un número positivo válido
+    if int(digitos) == 0:
+        raise ValidationError('El teléfono debe contener dígitos válidos.')
 
 # --- Modelos Base ---
 
@@ -72,6 +97,36 @@ class Cliente(models.Model):
         
         if any(char.isdigit() for char in self.apellido):
             raise ValidationError({'apellido': 'El apellido no puede contener números.'})
+        
+        # Validar DNI adicional
+        if self.dni:
+            # Limpiar espacios
+            self.dni = self.dni.strip()
+            
+            # Validar que no sea todo ceros
+            if self.dni == '0' * len(self.dni):
+                raise ValidationError({'dni': 'El DNI no puede ser todo ceros.'})
+            
+            # Validar que sea un número válido
+            try:
+                dni_num = int(self.dni)
+                if dni_num <= 0:
+                    raise ValidationError({'dni': 'El DNI debe ser un número positivo válido.'})
+            except ValueError:
+                raise ValidationError({'dni': 'El DNI debe contener solo dígitos.'})
+        
+        # Validar teléfono adicional
+        if self.telefono:
+            # Extraer solo dígitos del teléfono
+            digitos_telefono = re.sub(r'[^\d]', '', self.telefono)
+            
+            # Verificar que no sea todo ceros
+            if digitos_telefono and digitos_telefono == '0' * len(digitos_telefono):
+                raise ValidationError({'telefono': 'El teléfono no puede ser todo ceros.'})
+            
+            # Verificar que tenga dígitos válidos
+            if digitos_telefono and int(digitos_telefono) <= 0:
+                raise ValidationError({'telefono': 'El teléfono debe contener dígitos válidos.'})
         
         # Normalizar: Primera letra mayúscula
         self.nombre = self.nombre.strip().title()

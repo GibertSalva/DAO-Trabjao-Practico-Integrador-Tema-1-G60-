@@ -53,7 +53,11 @@
                        class="input input-bordered w-full" 
                        value="{{ cliente.dni|default:'' }}" 
                        placeholder="Ej: 12345678" 
-                       required maxlength="10" pattern="[0-9]{7,8}">
+                       required maxlength="8" pattern="[1-9][0-9]{6,7}"
+                       title="Ingrese un DNI válido de 7 u 8 dígitos (no puede comenzar con 0)">
+                <label class="label">
+                    <span class="label-text-alt text-error hidden" id="dniError"></span>
+                </label>
             </div>
             
             <div class="form-control">
@@ -69,12 +73,18 @@
             <div class="form-control">
                 <label class="label">
                     <span class="label-text font-semibold">Teléfono *</span>
+                    <span class="label-text-alt text-gray-500">Solo números y símbolos: + - ( ) espacio</span>
                 </label>
-                <input type="tel" id="telefono" name="telefono" 
+                <input type="text" id="telefono" name="telefono" 
                        class="input input-bordered w-full" 
                        value="{{ cliente.telefono|default:'' }}" 
                        placeholder="Ej: +54 9 11 1234-5678" 
-                       required maxlength="20">
+                       required maxlength="20"
+                       pattern="[\d\s\-\+\(\)]{8,20}"
+                       title="Ingrese un teléfono válido (mínimo 8 caracteres)">
+                <label class="label">
+                    <span class="label-text-alt text-error hidden" id="telefonoError"></span>
+                </label>
             </div>
             
             <div class="divider"></div>
@@ -86,7 +96,7 @@
                     </svg>
                     Cancelar
                 </a>
-                <button type="submit" class="btn btn-primary gap-2">
+                <button type="submit" class="btn btn-primary gap-2" id="submitBtn">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -96,4 +106,187 @@
         </form>
     </div>
 </div>
+
+<!-- Validaciones JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dniInput = document.getElementById('dni');
+    const telefonoInput = document.getElementById('telefono');
+    const nombreInput = document.getElementById('nombre');
+    const apellidoInput = document.getElementById('apellido');
+    const dniError = document.getElementById('dniError');
+    const telefonoError = document.getElementById('telefonoError');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.querySelector('form');
+
+    // Validación de DNI en tiempo real
+    if (dniInput) {
+        dniInput.addEventListener('input', function(e) {
+            // Solo permitir números
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Validar longitud y que no sea todo ceros
+            const dni = this.value;
+            dniError.classList.add('hidden');
+            
+            if (dni.length > 0) {
+                if (dni === '0'.repeat(dni.length)) {
+                    dniError.textContent = '⚠️ El DNI no puede ser todo ceros';
+                    dniError.classList.remove('hidden');
+                    this.setCustomValidity('El DNI no puede ser todo ceros');
+                } else if (dni.length < 7) {
+                    dniError.textContent = '⚠️ El DNI debe tener al menos 7 dígitos';
+                    dniError.classList.remove('hidden');
+                    this.setCustomValidity('Mínimo 7 dígitos');
+                } else if (parseInt(dni) === 0) {
+                    dniError.textContent = '⚠️ El DNI debe ser un número válido mayor a cero';
+                    dniError.classList.remove('hidden');
+                    this.setCustomValidity('DNI inválido');
+                } else {
+                    this.setCustomValidity('');
+                }
+            }
+        });
+    }
+
+    // Validación de teléfono en tiempo real
+    if (telefonoInput) {
+        telefonoInput.addEventListener('input', function(e) {
+            let valor = this.value;
+            
+            // Prevenir que el primer carácter sea un guión (signo negativo)
+            if (valor.startsWith('-')) {
+                valor = valor.substring(1);
+            }
+            
+            // Solo permitir números, espacios, paréntesis, guiones (no al inicio) y símbolo +
+            valor = valor.replace(/[^0-9\s\-\+\(\)]/g, '');
+            
+            // Asegurar que no haya múltiples guiones consecutivos que simulen negativo
+            valor = valor.replace(/--+/g, '-');
+            
+            this.value = valor;
+            
+            const telefono = valor;
+            const soloDigitos = telefono.replace(/[^0-9]/g, '');
+            telefonoError.classList.add('hidden');
+            
+            if (telefono.length > 0) {
+                // Validar que tenga al menos 8 dígitos
+                if (soloDigitos.length < 8) {
+                    telefonoError.textContent = '⚠️ El teléfono debe contener al menos 8 dígitos';
+                    telefonoError.classList.remove('hidden');
+                    this.setCustomValidity('Mínimo 8 dígitos numéricos');
+                }
+                // Validar que no sea todo ceros
+                else if (soloDigitos === '0'.repeat(soloDigitos.length)) {
+                    telefonoError.textContent = '⚠️ El teléfono no puede ser todo ceros';
+                    telefonoError.classList.remove('hidden');
+                    this.setCustomValidity('El teléfono no puede ser todo ceros');
+                }
+                // Validar que los dígitos formen un número válido
+                else if (parseInt(soloDigitos) === 0) {
+                    telefonoError.textContent = '⚠️ El teléfono debe contener dígitos válidos';
+                    telefonoError.classList.remove('hidden');
+                    this.setCustomValidity('Teléfono inválido');
+                }
+                else {
+                    this.setCustomValidity('');
+                }
+            }
+        });
+        
+        // Prevenir pegado de números negativos
+        telefonoInput.addEventListener('paste', function(e) {
+            setTimeout(() => {
+                let valor = this.value;
+                // Eliminar guión al inicio si existe
+                if (valor.startsWith('-')) {
+                    valor = valor.substring(1);
+                }
+                this.value = valor.replace(/[^0-9\s\-\+\(\)]/g, '');
+                this.dispatchEvent(new Event('input'));
+            }, 0);
+        });
+        
+        // Prevenir que se escriba guión como primer carácter con keydown
+        telefonoInput.addEventListener('keydown', function(e) {
+            // Si el campo está vacío o solo tiene espacios y se intenta escribir un guión
+            if ((this.value.trim() === '' || this.selectionStart === 0) && e.key === '-') {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Validación de nombre y apellido (sin números)
+    function validarTextoSinNumeros(input, campo) {
+        input.addEventListener('input', function(e) {
+            if (/\d/.test(this.value)) {
+                this.setCustomValidity(`El ${campo} no puede contener números`);
+                this.classList.add('input-error');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('input-error');
+            }
+        });
+    }
+
+    if (nombreInput) validarTextoSinNumeros(nombreInput, 'nombre');
+    if (apellidoInput) validarTextoSinNumeros(apellidoInput, 'apellido');
+
+    // Validación final antes de enviar
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const dni = dniInput.value;
+            const telefono = telefonoInput.value;
+            const soloDigitos = telefono.replace(/[^0-9]/g, '');
+            
+            // Validar DNI
+            if (dni === '0'.repeat(dni.length) || parseInt(dni) === 0) {
+                e.preventDefault();
+                alert('❌ El DNI no puede ser todo ceros o cero');
+                dniInput.focus();
+                return false;
+            }
+            
+            if (dni.length < 7 || dni.length > 8) {
+                e.preventDefault();
+                alert('❌ El DNI debe tener 7 u 8 dígitos');
+                dniInput.focus();
+                return false;
+            }
+            
+            // Validar teléfono
+            if (soloDigitos === '0'.repeat(soloDigitos.length) || parseInt(soloDigitos) === 0) {
+                e.preventDefault();
+                alert('❌ El teléfono no puede ser todo ceros');
+                telefonoInput.focus();
+                return false;
+            }
+            
+            if (soloDigitos.length < 8) {
+                e.preventDefault();
+                alert('❌ El teléfono debe contener al menos 8 dígitos');
+                telefonoInput.focus();
+                return false;
+            }
+            
+            // Validar nombre y apellido
+            if (/\d/.test(nombreInput.value)) {
+                e.preventDefault();
+                alert('❌ El nombre no puede contener números');
+                nombreInput.focus();
+                return false;
+            }
+            
+            if (/\d/.test(apellidoInput.value)) {
+                e.preventDefault();
+                alert('❌ El apellido no puede contener números');
+                apellidoInput.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

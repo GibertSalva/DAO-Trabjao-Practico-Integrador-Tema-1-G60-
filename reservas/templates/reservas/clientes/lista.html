@@ -20,53 +20,53 @@
         </div>
 
         <!-- Barra de búsqueda y filtros -->
-        {% if clientes %}
-        <div class="flex flex-col sm:flex-row gap-3 mb-4">
-            <div class="form-control flex-1">
-                <div class="input-group">
-                    <span class="bg-base-200">
+        <div class="mb-4">
+            <form method="get" class="flex flex-col sm:flex-row gap-3">
+                <div class="form-control flex-1">
+                    <div class="input-group">
+                        <span class="bg-base-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input 
+                            type="text" 
+                            name="search"
+                            value="{{ search_query }}"
+                            placeholder="Buscar por nombre, DNI, email o teléfono..." 
+                            class="input input-bordered w-full" 
+                        />
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                    </span>
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        placeholder="Buscar por nombre, DNI, email o teléfono..." 
-                        class="input input-bordered w-full" 
-                    />
+                        Buscar
+                    </button>
+                    {% if search_query %}
+                    <a href="{% url 'cliente_lista' %}" class="btn btn-ghost gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Limpiar
+                    </a>
+                    {% endif %}
                 </div>
-            </div>
-            <button id="clearSearch" class="btn btn-ghost btn-sm hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Limpiar
-            </button>
-        </div>
-
-        <!-- Contador de resultados -->
-        <div class="flex justify-between items-center mb-3">
-            <span class="text-sm text-base-content/60">
-                Mostrando <span id="showingCount">{{ clientes|length }}</span> de <span id="totalCount">{{ clientes|length }}</span> clientes
-            </span>
-            <div class="flex gap-2">
-                <button class="btn btn-xs btn-ghost sort-btn" data-sort="nombre">
-                    Nombre
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                </button>
-                <button class="btn btn-xs btn-ghost sort-btn" data-sort="dni">
-                    DNI
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                </button>
-            </div>
+            </form>
         </div>
         
-        <!-- Tabla con densidad variable -->
+        {% if search_query %}
+        <div class="alert alert-info mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Resultados para: <strong>"{{ search_query }}"</strong> - {{ clientes.paginator.count }} encontrado(s)</span>
+        </div>
+        {% endif %}
+
+        {% if clientes %}
         <div class="overflow-x-auto">
             <table id="clientesTable" class="table w-full table-compact">
                 <thead>
@@ -160,8 +160,8 @@
         <div class="flex justify-center mt-6">
             <div class="btn-group">
                 {% if clientes.has_previous %}
-                    <a href="?page=1" class="btn btn-sm">«</a>
-                    <a href="?page={{ clientes.previous_page_number }}" class="btn btn-sm">‹</a>
+                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">«</a>
+                    <a href="?page={{ clientes.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">‹</a>
                 {% else %}
                     <button class="btn btn-sm btn-disabled">«</button>
                     <button class="btn btn-sm btn-disabled">‹</button>
@@ -170,8 +170,8 @@
                 <button class="btn btn-sm btn-active">Página {{ clientes.number }} de {{ clientes.paginator.num_pages }}</button>
                 
                 {% if clientes.has_next %}
-                    <a href="?page={{ clientes.next_page_number }}" class="btn btn-sm">›</a>
-                    <a href="?page={{ clientes.paginator.num_pages }}" class="btn btn-sm">»</a>
+                    <a href="?page={{ clientes.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">›</a>
+                    <a href="?page={{ clientes.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">»</a>
                 {% else %}
                     <button class="btn btn-sm btn-disabled">›</button>
                     <button class="btn btn-sm btn-disabled">»</button>
@@ -179,121 +179,30 @@
             </div>
         </div>
         <div class="text-center mt-2 text-sm text-base-content/60">
-            Mostrando {{ clientes.start_index }} - {{ clientes.end_index }} de {{ clientes.paginator.count }} clientes
+            Mostrando {{ clientes.start_index }} - {{ clientes.end_index }} de {{ clientes.paginator.count }} cliente(s)
         </div>
         {% endif %}
 
-        <!-- Sin resultados de búsqueda -->
-        <div id="noResults" class="text-center py-12 hidden">
+        {% else %}
+        <div class="text-center py-12">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p class="text-lg text-base-content/60">No se encontraron clientes</p>
-            <p class="text-sm text-base-content/40">Intenta con otros términos de búsqueda</p>
-        </div>
-
-        {% else %}
-        <div class="text-center py-16">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <p class="text-xl text-base-content/60 mb-4">No hay clientes registrados aún</p>
+            <p class="text-lg text-base-content/60 mb-2">No se encontraron clientes</p>
+            {% if search_query %}
+            <p class="text-sm text-base-content/40 mb-4">Intenta con otros términos de búsqueda</p>
+            <a href="{% url 'cliente_lista' %}" class="btn btn-ghost gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Ver todos los clientes
+            </a>
+            {% else %}
+            <p class="text-sm text-base-content/40 mb-4">Registra el primer cliente para comenzar</p>
             <a href="{% url 'cliente_crear' %}" class="btn btn-primary">Registrar el primer cliente</a>
+            {% endif %}
         </div>
         {% endif %}
     </div>
 </div>
-
-<!-- JavaScript para funcionalidad interactiva -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const clearSearch = document.getElementById('clearSearch');
-    const clientesTable = document.getElementById('clientesTable');
-    const clientRows = document.querySelectorAll('.client-row');
-    const noResults = document.getElementById('noResults');
-    const showingCount = document.getElementById('showingCount');
-    const totalCount = document.getElementById('totalCount');
-    const tableBody = document.getElementById('clientesTableBody');
-
-    // Búsqueda en tiempo real
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            if (searchTerm.length > 0) {
-                clearSearch.classList.remove('hidden');
-            } else {
-                clearSearch.classList.add('hidden');
-            }
-
-            clientRows.forEach(row => {
-                const nombre = row.dataset.nombre || '';
-                const dni = row.dataset.dni || '';
-                const email = row.dataset.email || '';
-                const telefono = row.dataset.telefono || '';
-
-                const matches = nombre.includes(searchTerm) || 
-                              dni.includes(searchTerm) || 
-                              email.includes(searchTerm) || 
-                              telefono.includes(searchTerm);
-
-                if (matches) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Actualizar contador
-            showingCount.textContent = visibleCount;
-
-            // Mostrar/ocultar mensaje de sin resultados
-            if (visibleCount === 0) {
-                noResults.classList.remove('hidden');
-                clientesTable.classList.add('hidden');
-            } else {
-                noResults.classList.add('hidden');
-                clientesTable.classList.remove('hidden');
-            }
-        });
-    }
-
-    // Limpiar búsqueda
-    if (clearSearch) {
-        clearSearch.addEventListener('click', function() {
-            searchInput.value = '';
-            searchInput.dispatchEvent(new Event('input'));
-            searchInput.focus();
-        });
-    }
-
-    // Sorting simple
-    const sortButtons = document.querySelectorAll('.sort-btn');
-    let sortAscending = true;
-    
-    sortButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const sortBy = this.dataset.sort;
-            sortAscending = !sortAscending;
-            
-            const rowsArray = Array.from(clientRows);
-            rowsArray.sort((a, b) => {
-                let aVal = a.dataset[sortBy] || '';
-                let bVal = b.dataset[sortBy] || '';
-                
-                if (sortAscending) {
-                    return aVal.localeCompare(bVal);
-                } else {
-                    return bVal.localeCompare(aVal);
-                }
-            });
-            
-            rowsArray.forEach(row => tableBody.appendChild(row));
-        });
-    });
-});
-</script>
 {% endblock %}

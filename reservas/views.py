@@ -4,6 +4,7 @@ from django.db.models import Q, Count, Sum, Avg
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 from decimal import Decimal
 from .models import Cliente, Cancha, TipoCancha, Reserva, Servicio, Torneo, Pago, Equipo, Partido
@@ -30,8 +31,21 @@ def home(request):
 # ========== VISTAS DE CLIENTES ==========
 
 def cliente_lista(request):
-    """Listar todos los clientes con paginación"""
-    clientes_list = Cliente.objects.all().order_by('id')
+    """Listar todos los clientes con paginación y búsqueda"""
+    clientes_list = Cliente.objects.all()
+    
+    # Búsqueda del lado del servidor
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        clientes_list = clientes_list.filter(
+            Q(nombre__icontains=search_query) |
+            Q(apellido__icontains=search_query) |
+            Q(dni__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(telefono__icontains=search_query)
+        )
+    
+    clientes_list = clientes_list.order_by('apellido', 'nombre')
     
     # Paginación: 10 clientes por página
     paginator = Paginator(clientes_list, 10)
@@ -44,33 +58,51 @@ def cliente_lista(request):
     except EmptyPage:
         clientes = paginator.page(paginator.num_pages)
     
-    return render(request, 'reservas/clientes/lista.html', {'clientes': clientes})
+    context = {
+        'clientes': clientes,
+        'search_query': search_query,
+    }
+    return render(request, 'reservas/clientes/lista.html', context)
 
 def cliente_crear(request):
     """Crear un nuevo cliente"""
     if request.method == 'POST':
         try:
             # Verificar si el DNI ya existe
-            dni = request.POST['dni']
+            dni = request.POST['dni'].strip()
             if Cliente.objects.filter(dni=dni).exists():
                 messages.error(request, f'Ya existe un cliente con el DNI {dni}. Por favor, verifica los datos.')
                 return render(request, 'reservas/clientes/form.html')
             
             # Verificar si el email ya existe
-            email = request.POST['email']
+            email = request.POST['email'].strip()
             if Cliente.objects.filter(email=email).exists():
                 messages.error(request, f'Ya existe un cliente con el email {email}. Por favor, usa otro email.')
                 return render(request, 'reservas/clientes/form.html')
             
-            cliente = Cliente.objects.create(
+            # Crear cliente sin guardar aún
+            cliente = Cliente(
                 nombre=request.POST['nombre'],
                 apellido=request.POST['apellido'],
                 dni=dni,
                 email=email,
                 telefono=request.POST['telefono']
             )
+            
+            # Validar antes de guardar
+            cliente.full_clean()
+            cliente.save()
+            
             messages.success(request, f'Cliente {cliente.nombre} {cliente.apellido} creado exitosamente.')
             return redirect('cliente_lista')
+        except ValidationError as e:
+            # Manejar errores de validación específicos
+            if hasattr(e, 'message_dict'):
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        messages.error(request, f'{field.capitalize()}: {error}')
+            else:
+                messages.error(request, str(e))
         except Exception as e:
             messages.error(request, f'Error al crear cliente: {str(e)}')
     
@@ -83,24 +115,42 @@ def cliente_editar(request, pk):
     if request.method == 'POST':
         try:
             # Verificar si el DNI ya existe en otro cliente
-            dni = request.POST['dni']
+            dni = request.POST['dni'].strip()
             if Cliente.objects.filter(dni=dni).exclude(pk=pk).exists():
                 messages.error(request, f'Ya existe otro cliente con el DNI {dni}. Por favor, verifica los datos.')
                 return render(request, 'reservas/clientes/form.html', {'cliente': cliente})
             
             # Verificar si el email ya existe en otro cliente
-            email = request.POST['email']
+            email = request.POST['email'].strip()
             if Cliente.objects.filter(email=email).exclude(pk=pk).exists():
                 messages.error(request, f'Ya existe otro cliente con el email {email}. Por favor, usa otro email.')
                 return render(request, 'reservas/clientes/form.html', {'cliente': cliente})
             
+            # Actualizar campos
             cliente.nombre = request.POST['nombre']
             cliente.apellido = request.POST['apellido']
             cliente.dni = dni
             cliente.email = email
             cliente.telefono = request.POST['telefono']
+            
+            # Validar antes de guardar
+            cliente.full_clean()
             cliente.save()
+            
             messages.success(request, f'Cliente {cliente.nombre} {cliente.apellido} actualizado exitosamente.')
+            return redirect('cliente_detalle', pk=pk)
+        except ValidationError as e:
+            # Manejar errores de validación específicos
+            if hasattr(e, 'message_dict'):
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        messages.error(request, f'{field.capitalize()}: {error}')
+            else:
+                messages.error(request, str(e))
+            return render(request, 'reservas/clientes/form.html', {'cliente': cliente})
+        except Exception as e:
+            messages.error(request, f'Error al actualizar cliente: {str(e)}')
+            return render(request, 'reservas/clientes/form.html', {'cliente': cliente})
             return redirect('cliente_lista')
         except Exception as e:
             messages.error(request, f'Error al actualizar cliente: {str(e)}')
@@ -131,9 +181,19 @@ def cliente_detalle(request, pk):
 # ========== VISTAS DE CANCHAS ==========
 
 def cancha_lista(request):
-    """Listar todas las canchas con paginación"""
-    canchas_list = Cancha.objects.all().select_related('tipo_cancha').order_by('id')
+    """Listar todas las canchas con paginación y búsqueda"""
+    canchas_list = Cancha.objects.all().select_related('tipo_cancha')
     tipos_cancha = TipoCancha.objects.all()
+    
+    # Búsqueda del lado del servidor
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        canchas_list = canchas_list.filter(
+            Q(nombre__icontains=search_query) |
+            Q(tipo_cancha__nombre__icontains=search_query)
+        )
+    
+    canchas_list = canchas_list.order_by('nombre')
     
     # Paginación: 10 canchas por página
     paginator = Paginator(canchas_list, 10)
@@ -146,10 +206,12 @@ def cancha_lista(request):
     except EmptyPage:
         canchas = paginator.page(paginator.num_pages)
     
-    return render(request, 'reservas/canchas/lista.html', {
+    context = {
         'canchas': canchas,
-        'tipos_cancha': tipos_cancha
-    })
+        'tipos_cancha': tipos_cancha,
+        'search_query': search_query,
+    }
+    return render(request, 'reservas/canchas/lista.html', context)
 
 def cancha_crear(request):
     """Crear una nueva cancha"""
@@ -527,6 +589,13 @@ def reportes(request):
     if cliente_id:
         clientes_con_reservas = [c for c in clientes_con_reservas if str(c['cliente'].id) == cliente_id]
     
+    # Ordenar por número de reservas (de mayor a menor)
+    clientes_con_reservas = sorted(
+        clientes_con_reservas,
+        key=lambda x: (x['num_reservas'], x['total_gasto']),
+        reverse=True
+    )
+    
     # ===== REPORTE 2: Reservas por cancha en el período =====
     canchas_con_reservas = []
     canchas = Cancha.objects.all()
@@ -558,12 +627,16 @@ def reportes(request):
     if cancha_id:
         canchas_con_reservas = [c for c in canchas_con_reservas if str(c['cancha'].id) == cancha_id]
     
-    # ===== REPORTE 3: Canchas más utilizadas =====
-    canchas_ranking = sorted(
-        [c for c in canchas_con_reservas],
-        key=lambda x: (x['num_reservas'], x['total_horas']),
+    # Ordenar por número de reservas, total de horas e ingresos (de mayor a menor)
+    canchas_con_reservas = sorted(
+        canchas_con_reservas,
+        key=lambda x: (x['num_reservas'], x['total_horas'], x['total_ingresos']),
         reverse=True
     )
+    
+    # ===== REPORTE 3: Canchas más utilizadas =====
+    # Usar la lista ya ordenada del reporte 2
+    canchas_ranking = canchas_con_reservas
     
     # ===== REPORTE 4: Gráfico estadístico - Utilización mensual de canchas =====
     # Obtener datos de los últimos 6 meses para comparativa
