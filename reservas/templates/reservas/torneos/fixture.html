@@ -23,11 +23,12 @@
                         {{ torneo.nombre }}
                     </h1>
                     <div class="flex gap-2 items-center mb-4">
-                        <span class="badge badge-lg badge-primary">{{ torneo.deporte }}</span>
                         {% if torneo.estado == 'EN_CURSO' %}
                             <span class="badge badge-lg badge-success">En Curso</span>
                         {% elif torneo.estado == 'FINALIZADO' %}
                             <span class="badge badge-lg badge-neutral">Finalizado</span>
+                        {% elif torneo.estado == 'INSCRIPCION' %}
+                            <span class="badge badge-lg badge-warning">Inscripción Abierta</span>
                         {% endif %}
                     </div>
                     <div class="text-sm opacity-70">

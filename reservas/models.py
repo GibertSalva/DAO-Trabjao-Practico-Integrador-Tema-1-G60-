@@ -443,10 +443,6 @@ class Partido(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        
-        # Si este partido tiene ganador, actualizar el siguiente partido
-        if self.ganador and self.estado == 'FINALIZADO':
-            self.avanzar_ganador()
     
     def avanzar_ganador(self):
         """Avanza al ganador a la siguiente ronda"""

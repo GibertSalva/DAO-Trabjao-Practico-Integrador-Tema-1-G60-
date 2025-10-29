@@ -738,15 +738,15 @@ def torneo_lista(request):
     for torneo in torneos_list:
         estado_anterior = torneo.estado
         
-        # Si pasó la fecha fin, debe estar FINALIZADO
+        # Si ya pasó la fecha de inicio y está en inscripción, cambiar a EN_CURSO
+        if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
+            torneo.estado = 'EN_CURSO'
+            torneo.save()
+        
+        # Si pasó la fecha fin, cambiar a FINALIZADO
         if hoy > torneo.fecha_fin and torneo.estado != 'FINALIZADO':
             torneo.estado = 'FINALIZADO'
             torneo.save()
-        # Si está entre las fechas y tiene partidos, debe estar EN_CURSO
-        elif torneo.fecha_inicio <= hoy <= torneo.fecha_fin and torneo.estado != 'FINALIZADO':
-            if torneo.partidos.exists() and torneo.estado == 'INSCRIPCION':
-                torneo.estado = 'EN_CURSO'
-                torneo.save()
     
     # Paginación: 10 torneos por página
     paginator = Paginator(torneos_list, 10)
@@ -808,12 +808,12 @@ def torneo_crear(request):
             torneo = Torneo.objects.create(
                 nombre=nombre,
                 descripcion=request.POST.get('descripcion', ''),
-                deporte=request.POST.get('deporte', 'Fútbol 5'),
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
                 premio=request.POST.get('premio', ''),
                 estado=request.POST.get('estado', 'INSCRIPCION'),
                 costo_inscripcion=request.POST.get('costo_inscripcion', 0) or 0,
+                reglamento=request.POST.get('reglamento', ''),
             )
             messages.success(request, f'Torneo "{torneo.nombre}" creado exitosamente.')
             return redirect('torneo_detalle', pk=torneo.pk)
@@ -832,13 +832,13 @@ def torneo_detalle(request, pk):
     hoy = timezone.now().date()
     estado_anterior = torneo.estado
     
-    if torneo.fecha_inicio <= hoy <= torneo.fecha_fin and torneo.estado != 'FINALIZADO':
-        # Si está entre las fechas y tiene fixture, debe estar EN_CURSO
-        if torneo.partidos.exists() and torneo.estado == 'INSCRIPCION':
-            torneo.estado = 'EN_CURSO'
-            torneo.save()
-    elif hoy > torneo.fecha_fin and torneo.estado != 'FINALIZADO':
-        # Si pasó la fecha fin, debería estar FINALIZADO
+    # Si ya pasó la fecha de inicio y está en inscripción, cambiar a EN_CURSO
+    if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
+        torneo.estado = 'EN_CURSO'
+        torneo.save()
+    
+    # Si pasó la fecha fin, cambiar a FINALIZADO
+    if hoy > torneo.fecha_fin and torneo.estado != 'FINALIZADO':
         torneo.estado = 'FINALIZADO'
         torneo.save()
     
@@ -917,12 +917,12 @@ def torneo_editar(request, pk):
             
             torneo.nombre = nombre
             torneo.descripcion = request.POST.get('descripcion', '')
-            torneo.deporte = request.POST.get('deporte', 'Fútbol 5')
             torneo.fecha_inicio = fecha_inicio
             torneo.fecha_fin = fecha_fin
             torneo.premio = request.POST.get('premio', '')
             torneo.estado = request.POST.get('estado', 'INSCRIPCION')
             torneo.costo_inscripcion = request.POST.get('costo_inscripcion', 0) or 0
+            torneo.reglamento = request.POST.get('reglamento', '')
             torneo.save()
             
             messages.success(request, f'Torneo "{torneo.nombre}" actualizado exitosamente.')
@@ -957,16 +957,26 @@ def torneo_inscribir_equipo(request, pk):
     """Inscribir equipos a un torneo"""
     torneo = get_object_or_404(Torneo, pk=pk)
     
-    # Actualizar estado según fechas
+    # Actualizar estado según fechas automáticamente
     hoy = timezone.now().date()
-    if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
-        if torneo.partidos.exists():
-            torneo.estado = 'EN_CURSO'
-            torneo.save()
     
-    # Validar que el torneo esté en inscripción Y no haya comenzado
-    if torneo.estado != 'INSCRIPCION' or torneo.fecha_inicio <= hoy:
-        messages.error(request, 'No se pueden inscribir equipos. El torneo ya comenzó o no está abierto para inscripciones.')
+    # Si ya pasó la fecha de inicio y está en inscripción, cambiar a EN_CURSO
+    if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
+        torneo.estado = 'EN_CURSO'
+        torneo.save()
+        messages.warning(request, f'El torneo ya comenzó (fecha de inicio: {torneo.fecha_inicio.strftime("%d/%m/%Y")}). El estado se actualizó a "En Curso".')
+    
+    # Si ya pasó la fecha de fin, cambiar a FINALIZADO
+    if torneo.fecha_fin < hoy and torneo.estado != 'FINALIZADO':
+        torneo.estado = 'FINALIZADO'
+        torneo.save()
+    
+    # Validar que el torneo esté en inscripción (después de actualizar el estado)
+    if torneo.estado != 'INSCRIPCION':
+        if torneo.estado == 'EN_CURSO':
+            messages.error(request, f'El torneo ya comenzó el {torneo.fecha_inicio.strftime("%d/%m/%Y")}. No se pueden inscribir más equipos.')
+        elif torneo.estado == 'FINALIZADO':
+            messages.error(request, 'El torneo ya finalizó. No se pueden inscribir equipos.')
         return redirect('torneo_detalle', pk=pk)
     
     if request.method == 'POST':
@@ -997,10 +1007,25 @@ def torneo_desinscribir_equipo(request, pk, equipo_pk):
     torneo = get_object_or_404(Torneo, pk=pk)
     equipo = get_object_or_404(Equipo, pk=equipo_pk)
     
-    # Validar que el torneo esté en inscripción Y no haya comenzado
+    # Actualizar estado según fechas automáticamente
     hoy = timezone.now().date()
-    if torneo.estado != 'INSCRIPCION' or torneo.fecha_inicio <= hoy:
-        messages.error(request, 'No se pueden desinscribir equipos. El torneo ya comenzó o no está abierto para inscripciones.')
+    
+    # Si ya pasó la fecha de inicio y está en inscripción, cambiar a EN_CURSO
+    if torneo.fecha_inicio <= hoy and torneo.estado == 'INSCRIPCION':
+        torneo.estado = 'EN_CURSO'
+        torneo.save()
+    
+    # Si ya pasó la fecha de fin, cambiar a FINALIZADO
+    if torneo.fecha_fin < hoy and torneo.estado != 'FINALIZADO':
+        torneo.estado = 'FINALIZADO'
+        torneo.save()
+    
+    # Validar que el torneo esté en inscripción (después de actualizar el estado)
+    if torneo.estado != 'INSCRIPCION':
+        if torneo.estado == 'EN_CURSO':
+            messages.error(request, f'El torneo ya comenzó el {torneo.fecha_inicio.strftime("%d/%m/%Y")}. No se pueden desinscribir equipos.')
+        elif torneo.estado == 'FINALIZADO':
+            messages.error(request, 'El torneo ya finalizó. No se pueden desinscribir equipos.')
         return redirect('torneo_detalle', pk=pk)
     
     torneo.equipos.remove(equipo)
@@ -1135,15 +1160,23 @@ def partido_registrar_resultado(request, pk):
             partido.clean()
             partido.save()
             
+            # Avanzar al ganador a la siguiente ronda
+            partido.avanzar_ganador()
+            
             messages.success(request, f'Resultado registrado. Ganador: {partido.ganador.nombre}')
             return redirect('torneo_fixture', pk=partido.torneo.pk)
             
         except Exception as e:
             messages.error(request, f'Error al registrar resultado: {str(e)}')
     
+    # Calcular el total de rondas del torneo
+    total_rondas = partido.torneo.partidos.values_list('ronda', flat=True).distinct().count()
+    es_final = partido.ronda == total_rondas
+    
     context = {
         'partido': partido,
         'torneo': partido.torneo,
+        'es_final': es_final,
     }
     return render(request, 'reservas/torneos/registrar_resultado.html', context)
 

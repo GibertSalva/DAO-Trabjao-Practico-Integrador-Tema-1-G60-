@@ -99,22 +99,7 @@
                         Configuración del Torneo
                     </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text font-semibold">Deporte *</span>
-                            </label>
-                            <select name="deporte" class="select select-bordered w-full" required>
-                                <option value="" disabled {% if not torneo %}selected{% endif %}>Selecciona un deporte</option>
-                                <option value="Fútbol 5" {% if torneo.deporte == "Fútbol 5" %}selected{% endif %}>Fútbol 5</option>
-                                <option value="Fútbol 7" {% if torneo.deporte == "Fútbol 7" %}selected{% endif %}>Fútbol 7</option>
-                                <option value="Fútbol 11" {% if torneo.deporte == "Fútbol 11" %}selected{% endif %}>Fútbol 11</option>
-                                <option value="Básquet" {% if torneo.deporte == "Básquet" %}selected{% endif %}>Básquet</option>
-                                <option value="Vóley" {% if torneo.deporte == "Vóley" %}selected{% endif %}>Vóley</option>
-                                <option value="Tenis" {% if torneo.deporte == "Tenis" %}selected{% endif %}>Tenis</option>
-                            </select>
-                        </div>
-
+                    <div class="grid grid-cols-1 gap-4">
                         <div class="form-control">
                             <label class="label">
                                 <span class="label-text font-semibold">Estado del Torneo</span>

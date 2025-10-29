@@ -19,12 +19,13 @@
     <div class="card bg-base-100 shadow-xl mb-8">
         <div class="card-body">
             <h1 class="card-title text-3xl mb-2">
-                📝 Registrar Resultado del Partido
+                Registrar Resultado del Partido
             </h1>
             <div class="flex gap-2 items-center">
                 <span class="badge badge-lg badge-primary">{{ torneo.nombre }}</span>
                 <span class="badge badge-lg badge-ghost">Partido #{{ partido.numero_partido }}</span>
-                {% if partido.ronda == torneo.partidos.values_list('ronda', flat=True).distinct|length %}
+                <span class="badge badge-lg badge-info">Ronda {{ partido.ronda }}</span>
+                {% if es_final %}
                     <span class="badge badge-lg badge-warning">FINAL</span>
                 {% endif %}
             </div>
@@ -62,25 +63,12 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-lg">{{ partido.equipo1.nombre }}</h3>
-                                    <p class="text-sm opacity-70">{{ partido.equipo1.jugadores.count }} jugadores</p>
+                                    <p class="text-sm opacity-70">Equipo 1</p>
                                 </div>
                             </div>
 
-                            <!-- Jugadores -->
-                            <div class="divider my-2">Jugadores</div>
-                            <div class="flex flex-wrap gap-2 mb-4">
-                                {% for jugador in partido.equipo1.jugadores.all %}
-                                    <div class="badge badge-outline">
-                                        {{ jugador.nombre }} {{ jugador.apellido }}
-                                        {% if jugador == partido.equipo1.capitan %}
-                                            <span class="ml-1">👑</span>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-
                             <!-- Input de Resultado -->
-                            <div class="form-control">
+                            <div class="form-control mt-4">
                                 <label class="label">
                                     <span class="label-text font-bold">Puntos anotados</span>
                                 </label>
@@ -108,25 +96,12 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-lg">{{ partido.equipo2.nombre }}</h3>
-                                    <p class="text-sm opacity-70">{{ partido.equipo2.jugadores.count }} jugadores</p>
+                                    <p class="text-sm opacity-70">Equipo 2</p>
                                 </div>
                             </div>
 
-                            <!-- Jugadores -->
-                            <div class="divider my-2">Jugadores</div>
-                            <div class="flex flex-wrap gap-2 mb-4">
-                                {% for jugador in partido.equipo2.jugadores.all %}
-                                    <div class="badge badge-outline">
-                                        {{ jugador.nombre }} {{ jugador.apellido }}
-                                        {% if jugador == partido.equipo2.capitan %}
-                                            <span class="ml-1">👑</span>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-
                             <!-- Input de Resultado -->
-                            <div class="form-control">
+                            <div class="form-control mt-4">
                                 <label class="label">
                                     <span class="label-text font-bold">Puntos anotados</span>
                                 </label>
@@ -156,7 +131,7 @@
                 <div id="ganadorPreview" class="card bg-success/10 border-2 border-success hidden mb-6">
                     <div class="card-body py-4">
                         <div class="flex items-center gap-4">
-                            <span class="text-4xl">🏆</span>
+                            <div class="text-4xl font-bold text-success">✓</div>
                             <div>
                                 <p class="text-sm opacity-70">Ganador del partido:</p>
                                 <p class="text-2xl font-bold text-success" id="ganadorNombre"></p>
