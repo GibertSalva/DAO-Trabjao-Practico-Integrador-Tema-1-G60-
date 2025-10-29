@@ -322,18 +322,84 @@ def reserva_lista(request):
 def reserva_crear(request):
     """Crear una nueva reserva con validación de disponibilidad"""
     if request.method == 'POST':
+        # Función auxiliar para preparar el contexto del formulario
+        def preparar_contexto_formulario(mantener_datos=False, limpiar_fechas=False):
+            clientes = Cliente.objects.all().order_by('apellido', 'nombre')
+            canchas = Cancha.objects.all().order_by('nombre')
+            servicios = Servicio.objects.all()
+            torneos = Torneo.objects.all()
+            reservas_activas = Reserva.objects.filter(estado__in=['PENDIENTE', 'PAGADA']).values('id', 'cancha_id', 'fecha_hora_inicio', 'fecha_hora_fin', 'estado')
+            import json
+            reservas_json = json.dumps([{
+                'id': r['id'],
+                'cancha_id': r['cancha_id'],
+                'fecha_hora_inicio': r['fecha_hora_inicio'].isoformat(),
+                'fecha_hora_fin': r['fecha_hora_fin'].isoformat(),
+                'estado': r['estado']
+            } for r in reservas_activas])
+            
+            contexto = {
+                'clientes': clientes,
+                'canchas': canchas,
+                'servicios': servicios,
+                'torneos': torneos,
+                'estados': Reserva.ESTADO_CHOICES,
+                'reservas_json': reservas_json
+            }
+            
+            # Si mantener_datos es True, preservar los datos del POST
+            if mantener_datos:
+                contexto['datos_form'] = {
+                    'cliente_id': request.POST.get('cliente', ''),
+                    'cancha_id': request.POST.get('cancha', ''),
+                    # Si limpiar_fechas es True, no pasar las fechas
+                    'fecha_hora_inicio': '' if limpiar_fechas else request.POST.get('fecha_hora_inicio', ''),
+                    'fecha_hora_fin': '' if limpiar_fechas else request.POST.get('fecha_hora_fin', ''),
+                    'servicios_ids': request.POST.getlist('servicios'),
+                    'torneo_id': request.POST.get('torneo', ''),
+                }
+            
+            return contexto
+        
+        # Validar campos requeridos
+        if 'cliente' not in request.POST or not request.POST['cliente']:
+            messages.error(request, 'Debes seleccionar un cliente.')
+            return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario())
+        
+        if 'cancha' not in request.POST or not request.POST['cancha']:
+            messages.error(request, 'Debes seleccionar una cancha.')
+            return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario())
+        
+        if 'fecha_hora_inicio' not in request.POST or not request.POST['fecha_hora_inicio']:
+            messages.error(request, 'Debes seleccionar la fecha y hora de inicio.')
+            return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario(mantener_datos=True))
+        
+        if 'fecha_hora_fin' not in request.POST or not request.POST['fecha_hora_fin']:
+            messages.error(request, 'Debes seleccionar la fecha y hora de fin.')
+            return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario(mantener_datos=True))
+        
         try:
+            # Obtener datos del formulario
             cliente = get_object_or_404(Cliente, pk=request.POST['cliente'])
             cancha = get_object_or_404(Cancha, pk=request.POST['cancha'])
             
-            # Convertir fechas
-            fecha_inicio = datetime.fromisoformat(request.POST['fecha_hora_inicio'])
-            fecha_fin = datetime.fromisoformat(request.POST['fecha_hora_fin'])
+            # Convertir fechas y hacerlas timezone-aware
+            fecha_inicio_naive = datetime.fromisoformat(request.POST['fecha_hora_inicio'])
+            fecha_fin_naive = datetime.fromisoformat(request.POST['fecha_hora_fin'])
+            
+            # Convertir a timezone-aware usando la zona horaria configurada en Django
+            fecha_inicio = timezone.make_aware(fecha_inicio_naive)
+            fecha_fin = timezone.make_aware(fecha_fin_naive)
+            
+            # Validar que la fecha de inicio no sea en el pasado
+            if fecha_inicio < timezone.now():
+                messages.error(request, 'No se pueden hacer reservas en el pasado. Por favor, selecciona una fecha y hora válida.')
+                return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario(mantener_datos=True, limpiar_fechas=True))
             
             # Validar que la fecha de fin sea posterior a la de inicio
             if fecha_fin <= fecha_inicio:
                 messages.error(request, 'La fecha de fin debe ser posterior a la fecha de inicio.')
-                return redirect('reserva_crear')
+                return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario(mantener_datos=True, limpiar_fechas=True))
             
             # Validar disponibilidad de la cancha
             reservas_conflicto = Reserva.objects.filter(
@@ -345,7 +411,7 @@ def reserva_crear(request):
             
             if reservas_conflicto.exists():
                 messages.error(request, 'La cancha no está disponible en el horario seleccionado.')
-                return redirect('reserva_crear')
+                return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario(mantener_datos=True))
             
             # Crear la reserva
             reserva = Reserva.objects.create(
@@ -385,6 +451,7 @@ def reserva_crear(request):
             
         except Exception as e:
             messages.error(request, f'Error al crear reserva: {str(e)}')
+            return render(request, 'reservas/reservas/form.html', preparar_contexto_formulario())
     
     # Obtener todas las reservas activas para verificar disponibilidad
     import json

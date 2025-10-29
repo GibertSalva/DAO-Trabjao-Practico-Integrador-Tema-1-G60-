@@ -35,9 +35,9 @@
                             <span class="label-text font-semibold">Cliente *</span>
                         </label>
                         <select id="cliente" name="cliente" class="select select-bordered w-full" required>
-                            <option value="" disabled selected>Seleccionar cliente...</option>
+                            <option value="" disabled {% if not datos_form.cliente_id %}selected{% endif %}>Seleccionar cliente...</option>
                             {% for cliente in clientes %}
-                            <option value="{{ cliente.id }}">
+                            <option value="{{ cliente.id }}" {% if datos_form.cliente_id|stringformat:"s" == cliente.id|stringformat:"s" %}selected{% endif %}>
                                 {{ cliente.nombre }} {{ cliente.apellido }} - DNI: {{ cliente.dni }}
                             </option>
                             {% endfor %}
@@ -164,7 +164,7 @@
                         <label class="cancha-option cursor-pointer p-4 border-2 border-base-300 rounded-lg hover:border-primary transition-all block" data-cancha-id="{{ cancha.id }}">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3 flex-1">
-                                    <input type="radio" name="cancha" value="{{ cancha.id }}" class="radio radio-primary" required disabled>
+                                    <input type="radio" name="cancha" value="{{ cancha.id }}" class="radio radio-primary" required disabled {% if datos_form.cancha_id|stringformat:"s" == cancha.id|stringformat:"s" %}checked{% endif %}>
                                     <div class="flex-1">
                                         <div class="font-semibold text-lg">{{ cancha.nombre }}</div>
                                         <div class="text-sm text-base-content/60 flex gap-4 mt-1">
@@ -237,7 +237,7 @@
                     <label class="label cursor-pointer justify-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                         <input type="checkbox" name="servicios" value="{{ servicio.id }}" 
                                class="checkbox checkbox-primary"
-                               {% if reserva and servicio in reserva.servicios.all %}checked{% endif %}>
+                               {% if reserva and servicio in reserva.servicios.all %}checked{% elif datos_form.servicios_ids and servicio.id|stringformat:"s" in datos_form.servicios_ids %}checked{% endif %}>
                         <span class="label-text text-gray-900">
                             <span class="font-semibold">{{ servicio.nombre }}</span>
                             <span class="text-success ml-2 font-bold">+${{ servicio.costo_adicional }}</span>
@@ -265,7 +265,7 @@
                     <option value="">Ninguno</option>
                     {% for torneo in torneos %}
                     <option value="{{ torneo.id }}"
-                            {% if reserva and reserva.torneo and reserva.torneo.id == torneo.id %}selected{% endif %}>
+                            {% if reserva and reserva.torneo and reserva.torneo.id == torneo.id %}selected{% elif datos_form.torneo_id|stringformat:"s" == torneo.id|stringformat:"s" %}selected{% endif %}>
                         {{ torneo.nombre }}
                     </option>
                     {% endfor %}
@@ -336,6 +336,29 @@ let duracionSeleccionada = 0; // en minutos
 let fechaSeleccionada = null;
 let horaSeleccionada = null;
 
+// Datos del formulario previo (si hay error de validación)
+const datosFormularioPrevio = (function() {
+    try {
+        return {
+            clienteId: "{{ datos_form.cliente_id|default:'' }}",
+            canchaId: "{{ datos_form.cancha_id|default:'' }}",
+            fechaHoraInicio: "{{ datos_form.fecha_hora_inicio|default:'' }}",
+            fechaHoraFin: "{{ datos_form.fecha_hora_fin|default:'' }}",
+            serviciosIds: [{% for sid in datos_form.servicios_ids %}"{{ sid }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+            torneoId: "{{ datos_form.torneo_id|default:'' }}"
+        };
+    } catch(e) {
+        return {
+            clienteId: null,
+            canchaId: null,
+            fechaHoraInicio: null,
+            fechaHoraFin: null,
+            serviciosIds: [],
+            torneoId: null
+        };
+    }
+})();
+
 // Generar horarios disponibles (de 8:00 a 22:00, cada 30 minutos)
 function generarHorariosDisponibles() {
     const horaInicio = document.getElementById('hora_inicio');
@@ -357,6 +380,67 @@ function generarHorariosDisponibles() {
     }
 }
 
+// Restaurar datos del formulario previo
+function restaurarDatosFormulario() {
+    if (datosFormularioPrevio.fechaHoraInicio && datosFormularioPrevio.fechaHoraFin) {
+        // Parsear las fechas
+        const inicio = new Date(datosFormularioPrevio.fechaHoraInicio);
+        const fin = new Date(datosFormularioPrevio.fechaHoraFin);
+        
+        // Calcular duración en minutos
+        const duracionMs = fin - inicio;
+        const duracionMin = duracionMs / (1000 * 60);
+        duracionSeleccionada = duracionMin;
+        
+        // Establecer fecha
+        const fechaStr = inicio.toISOString().split('T')[0];
+        fechaSeleccionada = fechaStr;
+        document.getElementById('fecha_reserva').value = fechaStr;
+        
+        // Establecer hora
+        const horaStr = String(inicio.getHours()).padStart(2, '0') + ':' + String(inicio.getMinutes()).padStart(2, '0');
+        horaSeleccionada = horaStr;
+        
+        // Marcar el botón de duración correspondiente
+        const duracionBtns = document.querySelectorAll('.duracion-btn');
+        let botonMarcado = false;
+        duracionBtns.forEach(btn => {
+            const duracion = btn.dataset.duracion;
+            if (duracion == duracionMin) {
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-primary');
+                botonMarcado = true;
+            }
+        });
+        
+        // Si no coincide con ningún botón, usar personalizado
+        if (!botonMarcado) {
+            const btnPersonalizado = document.querySelector('[data-duracion="custom"]');
+            if (btnPersonalizado) {
+                btnPersonalizado.classList.remove('btn-outline');
+                btnPersonalizado.classList.add('btn-primary');
+                document.getElementById('duracionPersonalizada').classList.remove('hidden');
+                document.getElementById('duracion_horas').value = duracionMin / 60;
+            }
+        }
+        
+        // Establecer valores hidden
+        document.getElementById('duracion_minutos').value = duracionMin;
+        
+        // Mostrar sección de horarios
+        document.getElementById('horaInicioSection').classList.remove('hidden');
+        document.getElementById('hora_inicio').value = horaStr;
+        
+        // Actualizar campos datetime
+        actualizarCamposDateTime();
+        
+        // Verificar disponibilidad
+        setTimeout(() => {
+            checkAvailability();
+        }, 100);
+    }
+}
+
 // Manejar selección de duración
 document.addEventListener('DOMContentLoaded', function() {
     generarHorariosDisponibles();
@@ -372,6 +456,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Establecer fecha mínima como hoy
     const hoy = new Date().toISOString().split('T')[0];
     fechaReserva.min = hoy;
+    
+    // Restaurar datos si hay error de validación
+    restaurarDatosFormulario();
     
     // Botones de duración
     duracionBtns.forEach(btn => {
