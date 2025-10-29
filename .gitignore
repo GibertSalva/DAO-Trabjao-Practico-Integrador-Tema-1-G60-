@@ -1,0 +1,39 @@
+# Base de datos SQLite
+*.sqlite3
+db.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Django
+*.log
+local_settings.py
+media/
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
