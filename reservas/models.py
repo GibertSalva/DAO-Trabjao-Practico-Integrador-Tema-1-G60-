@@ -288,7 +288,7 @@ class Torneo(models.Model):
         # Calcular número de rondas
         num_rondas = int(math.log2(num_equipos))
         
-        # Crear primera ronda
+        # Crear primera ronda con equipos
         import random
         random.shuffle(equipos_list)
         
@@ -301,6 +301,18 @@ class Torneo(models.Model):
                 ronda=ronda,
                 numero_partido=(i // 2) + 1
             )
+        
+        # Crear partidos vacíos para las rondas siguientes (semifinales, final, etc.)
+        for ronda in range(2, num_rondas + 1):
+            partidos_en_ronda = num_equipos // (2 ** ronda)
+            for partido_num in range(1, partidos_en_ronda + 1):
+                Partido.objects.create(
+                    torneo=self,
+                    equipo1=None,  # Se llenarán cuando avancen los ganadores
+                    equipo2=None,
+                    ronda=ronda,
+                    numero_partido=partido_num
+                )
         
         # Cambiar estado del torneo
         self.estado = 'EN_CURSO'

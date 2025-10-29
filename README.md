@@ -56,13 +56,13 @@ El sistema se estructura en torno al siguiente Modelo Entidad-Relación (MER):
 
 Sigue estos pasos para levantar el proyecto en tu entorno local.
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/GibertSalva/DAO-Trabjao-Practico-Integrador-Tema-1-G60-.git
-    cd DAO-Trabjao-Practico-Integrador-Tema-1-G60-
-    ```
+  1.  **Clonar el repositorio:**
+      ```bash
+      git clone https://github.com/GibertSalva/DAO-Trabjao-Practico-Integrador-Tema-1-G60-.git
+      cd DAO-Trabjao-Practico-Integrador-Tema-1-G60-
+      ```
 
-2.  **Instalar dependencias:**
+  2.  **Instalar dependencias:**
     ```bash
     pip install -r requirements.txt
     ```
