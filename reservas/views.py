@@ -1362,3 +1362,4 @@ def equipo_eliminar(request, pk):
     return render(request, 'reservas/equipos/confirmar_eliminar.html', context)
 
 
+# ================== FIN DE VISTAS DE TORNEOS Y EQUIPOS ==================
