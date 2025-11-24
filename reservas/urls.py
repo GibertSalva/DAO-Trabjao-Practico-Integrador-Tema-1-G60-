@@ -33,6 +33,13 @@ urlpatterns = [
     path('reservas/<int:pk>/eliminar/', views.reserva_eliminar, name='reserva_eliminar'),
     path('reservas/<int:pk>/marcar-pagada/', views.reserva_marcar_pagada, name='reserva_marcar_pagada'),
     
+    # URLs de MercadoPago
+    path('reservas/<int:pk>/pagar-mercadopago/', views.reserva_crear_pago_mercadopago, name='reserva_pagar_mercadopago'),
+    path('reservas/<int:pk>/pago-exitoso/', views.reserva_pago_exitoso, name='reserva_pago_exitoso'),
+    path('reservas/<int:pk>/pago-pendiente/', views.reserva_pago_pendiente, name='reserva_pago_pendiente'),
+    path('reservas/<int:pk>/pago-fallido/', views.reserva_pago_fallido, name='reserva_pago_fallido'),
+    path('mercadopago/webhook/', views.mercadopago_webhook, name='mercadopago_webhook'),
+    
     # URLs de Torneos
     path('torneos/', views.torneo_lista, name='torneo_lista'),
     path('torneos/crear/', views.torneo_crear, name='torneo_crear'),

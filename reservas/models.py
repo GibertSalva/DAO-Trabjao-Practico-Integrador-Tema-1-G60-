@@ -676,6 +676,7 @@ class Pago(models.Model):
         ('TRANSFERENCIA', 'Transferencia'),
         ('TARJETA_DEBITO', 'Tarjeta de Débito'),
         ('TARJETA_CREDITO', 'Tarjeta de Crédito'),
+        ('MERCADOPAGO', 'MercadoPago'),
     ]
 
     # Relación 1 a 1: un pago por reserva
@@ -694,6 +695,12 @@ class Pago(models.Model):
     # Campos adicionales
     comprobante = models.CharField(max_length=100, blank=True, null=True, help_text="Número de comprobante o transacción")
     observaciones = models.TextField(blank=True, null=True)
+    
+    # Campos para MercadoPago
+    mp_preference_id = models.CharField(max_length=255, blank=True, null=True, help_text="ID de preferencia de MercadoPago")
+    mp_payment_id = models.CharField(max_length=255, blank=True, null=True, help_text="ID de pago de MercadoPago")
+    mp_status = models.CharField(max_length=50, blank=True, null=True, help_text="Estado del pago en MercadoPago")
+    mp_payment_type = models.CharField(max_length=50, blank=True, null=True, help_text="Tipo de pago en MercadoPago")
 
     def __str__(self):
         return f"Pago para la reserva {self.reserva.id} - Estado: {self.estado}"

@@ -248,6 +248,36 @@ window.addEventListener('pageshow', function(event) {
                     </div>
                     {% endif %}
                 </div>
+                
+                <!-- Botón de pago con MercadoPago -->
+                {% if reserva.estado == 'PENDIENTE' and reserva.pago.estado == 'PENDIENTE' %}
+                <div class="mt-6 flex justify-center">
+                    <a href="{% url 'reserva_pagar_mercadopago' reserva.id %}" class="btn btn-success btn-lg gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        Pagar con MercadoPago
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- Información de MercadoPago si existe -->
+                {% if reserva.pago.mp_preference_id %}
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <h4 class="font-semibold mb-2">Información de MercadoPago</h4>
+                    <div class="text-sm space-y-1">
+                        {% if reserva.pago.mp_payment_id %}
+                        <p><strong>ID de Pago:</strong> {{ reserva.pago.mp_payment_id }}</p>
+                        {% endif %}
+                        {% if reserva.pago.mp_status %}
+                        <p><strong>Estado:</strong> <span class="badge badge-info">{{ reserva.pago.mp_status }}</span></p>
+                        {% endif %}
+                        {% if reserva.pago.mp_payment_type %}
+                        <p><strong>Tipo de Pago:</strong> {{ reserva.pago.mp_payment_type }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
