@@ -1,6 +1,6 @@
 # Base de datos SQLite
-#*.sqlite3
-#db.sqlite3
+*.sqlite3
+db.sqlite3
 
 # Python
 __pycache__/
@@ -37,3 +37,8 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Backups
+*_backup.*
+*_old.*
+*.bak

@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q, Count, Sum, Avg
+from django.db.models import Q, Count, Sum, Avg, F
+from django.db.models.functions import Extract
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.exceptions import ValidationError
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
+import json
 from .models import Cliente, Cancha, TipoCancha, Reserva, Servicio, Torneo, Pago, Equipo, Partido
 
 # Aca creamos las vistas para la app 'reservas'
@@ -606,6 +609,29 @@ def reserva_marcar_pagada(request, pk):
     # Si es GET, redirigir al detalle
     return redirect('reserva_detalle', pk=pk)
 
+
+def reserva_marcar_como_pagado(request, pk):
+    """Vista simplificada para marcar una reserva como pagada (para demostración)"""
+    reserva = get_object_or_404(Reserva, pk=pk)
+    
+    if request.method == 'POST':
+        if reserva.estado != 'PENDIENTE':
+            messages.warning(request, 'Esta reserva ya no está pendiente.')
+            return redirect('reserva_detalle', pk=pk)
+        
+        if hasattr(reserva, 'pago'):
+            pago = reserva.pago
+            if pago.estado != 'PAGADO':
+                # Usar el método del modelo que ya existe
+                pago.marcar_como_pagado('EFECTIVO', 'MANUAL-DEMO')
+                messages.success(request, '✅ Reserva marcada como pagada exitosamente (modo demostración).')
+            else:
+                messages.info(request, 'El pago ya estaba registrado como pagado.')
+        else:
+            messages.error(request, 'Esta reserva no tiene un pago asociado.')
+    
+    return redirect('reserva_detalle', pk=pk)
+
 # ========== VISTA DE REPORTES ==========
 
 def reportes(request):
@@ -657,11 +683,10 @@ def reportes(request):
     if cliente_id:
         clientes_con_reservas = [c for c in clientes_con_reservas if str(c['cliente'].id) == cliente_id]
     
-    # Ordenar por número de reservas (de mayor a menor)
+    # Ordenar por total gasto (importe) y luego por número de reservas (de mayor a menor)
     clientes_con_reservas = sorted(
         clientes_con_reservas,
-        key=lambda x: (x['num_reservas'], x['total_gasto']),
-        reverse=True
+        key=lambda x: (-float(x['total_gasto']), -x['num_reservas'])
     )
     
     # ===== REPORTE 2: Reservas por cancha en el período =====
@@ -695,11 +720,10 @@ def reportes(request):
     if cancha_id:
         canchas_con_reservas = [c for c in canchas_con_reservas if str(c['cancha'].id) == cancha_id]
     
-    # Ordenar por número de reservas, total de horas e ingresos (de mayor a menor)
+    # Ordenar por total ingresos (importe), luego por horas y reservas (de mayor a menor)
     canchas_con_reservas = sorted(
         canchas_con_reservas,
-        key=lambda x: (x['num_reservas'], x['total_horas'], x['total_ingresos']),
-        reverse=True
+        key=lambda x: (-float(x['total_ingresos']), -float(x['total_horas']), -x['num_reservas'])
     )
     
     # ===== REPORTE 3: Canchas más utilizadas =====
@@ -772,6 +796,7 @@ def reportes(request):
         
         # Reporte 4: Datos para gráfico
         'meses_data': meses_data,
+        'meses_data_json': json.dumps(meses_data),  # Para JavaScript
         
         # Para los filtros
         'clientes': Cliente.objects.all(),
@@ -789,9 +814,354 @@ def reportes(request):
 
 
 def reportes_pdf(request):
-    """Genera un PDF con los reportes del mes seleccionado"""
-    # TODO: Implementar generación de PDF
-    return HttpResponse("Funcionalidad de PDF en desarrollo", content_type="text/plain")
+    """Genera un PDF profesional con los reportes del período seleccionado"""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    from io import BytesIO
+    import datetime
+    
+    # Obtener parámetros de filtro (igual que en reportes())
+    mes_seleccionado = int(request.GET.get('mes', timezone.now().month))
+    anio_seleccionado = int(request.GET.get('anio', timezone.now().year))
+    cliente_id = request.GET.get('cliente')
+    cancha_id = request.GET.get('cancha')
+    
+    # Crear el buffer para el PDF
+    buffer = BytesIO()
+    
+    # Crear el documento PDF
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                          rightMargin=50, leftMargin=50,
+                          topMargin=50, bottomMargin=50)
+    
+    # Contenedor para elementos del PDF
+    elements = []
+    
+    # Estilos
+    styles = getSampleStyleSheet()
+    
+    # Estilo personalizado para título
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e3a8a'),
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Estilo para subtítulos
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#1e3a8a'),
+        spaceAfter=12,
+        spaceBefore=20,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Estilo para texto normal
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.black,
+        spaceAfter=6
+    )
+    
+    # ===== ENCABEZADO =====
+    elements.append(Paragraph("Sistema de Reservas de Canchas", title_style))
+    elements.append(Paragraph(f"Reporte del Período: {mes_seleccionado}/{anio_seleccionado}", normal_style))
+    elements.append(Paragraph(f"Fecha de generación: {timezone.now().strftime('%d/%m/%Y %H:%M')}", normal_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # ===== OBTENER DATOS (reutilizar lógica de reportes()) =====
+    # Filtrar reservas base
+    reservas = Reserva.objects.filter(
+        fecha_hora_inicio__month=mes_seleccionado,
+        fecha_hora_inicio__year=anio_seleccionado
+    )
+    
+    if cliente_id:
+        reservas = reservas.filter(cliente_id=cliente_id)
+    if cancha_id:
+        reservas = reservas.filter(cancha_id=cancha_id)
+    
+    # REPORTE 1: Clientes con más reservas
+    # Calcular gastos usando el modelo Pago
+    clientes_data = []
+    clientes_dict = {}
+    
+    for reserva in reservas:
+        cliente_id_val = reserva.cliente.id
+        if cliente_id_val not in clientes_dict:
+            clientes_dict[cliente_id_val] = {
+                'nombre': reserva.cliente.nombre,
+                'apellido': reserva.cliente.apellido,
+                'dni': reserva.cliente.dni,
+                'num_reservas': 0,
+                'total_gasto': 0
+            }
+        
+        clientes_dict[cliente_id_val]['num_reservas'] += 1
+        
+        # Buscar el pago asociado o calcular el costo
+        try:
+            pago = Pago.objects.filter(reserva=reserva).first()
+            if pago:
+                clientes_dict[cliente_id_val]['total_gasto'] += float(pago.monto_total)
+            else:
+                clientes_dict[cliente_id_val]['total_gasto'] += float(reserva.calcular_costo_total())
+        except Exception:
+            # Si hay error con Pago, usar el cálculo directo
+            clientes_dict[cliente_id_val]['total_gasto'] += float(reserva.calcular_costo_total())
+    
+    # Convertir a lista y ordenar
+    clientes_stats = sorted(clientes_dict.values(), 
+                           key=lambda x: (-x['total_gasto'], -x['num_reservas']))[:10]
+    
+    if clientes_stats:
+        elements.append(Paragraph("1. Top 10 Clientes por Gasto Total", subtitle_style))
+        
+        # Crear tabla
+        data = [['#', 'Cliente', 'DNI', 'Reservas', 'Gasto Total']]
+        for idx, item in enumerate(clientes_stats, 1):
+            data.append([
+                str(idx),
+                f"{item['nombre']} {item['apellido']}",
+                str(item['dni']),
+                str(item['num_reservas']),
+                f"${item['total_gasto']:,.2f}"
+            ])
+        
+        table = Table(data, colWidths=[0.5*inch, 2*inch, 1.2*inch, 1*inch, 1.3*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+        ]))
+        
+        elements.append(table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # REPORTE 2: Distribución por Cancha
+    canchas_dict = {}
+    
+    for reserva in reservas:
+        cancha_id_val = reserva.cancha.id
+        if cancha_id_val not in canchas_dict:
+            canchas_dict[cancha_id_val] = {
+                'nombre': reserva.cancha.nombre,
+                'tipo_deporte': reserva.cancha.tipo_cancha.nombre,
+                'num_reservas': 0,
+                'total_ingresos': 0,
+                'total_horas': 0
+            }
+        
+        canchas_dict[cancha_id_val]['num_reservas'] += 1
+        
+        # Calcular horas
+        duracion = (reserva.fecha_hora_fin - reserva.fecha_hora_inicio).total_seconds() / 3600
+        canchas_dict[cancha_id_val]['total_horas'] += duracion
+        
+        # Calcular ingresos
+        try:
+            pago = Pago.objects.filter(reserva=reserva).first()
+            if pago:
+                canchas_dict[cancha_id_val]['total_ingresos'] += float(pago.monto_total)
+            else:
+                canchas_dict[cancha_id_val]['total_ingresos'] += float(reserva.calcular_costo_total())
+        except Exception:
+            canchas_dict[cancha_id_val]['total_ingresos'] += float(reserva.calcular_costo_total())
+    
+    canchas_stats = sorted(canchas_dict.values(), key=lambda x: -x['total_ingresos'])
+    
+    if canchas_stats:
+        elements.append(Paragraph("2. Distribución de Ingresos por Cancha", subtitle_style))
+        
+        data = [['#', 'Cancha', 'Deporte', 'Reservas', 'Horas', 'Ingresos']]
+        for idx, item in enumerate(canchas_stats, 1):
+            data.append([
+                str(idx),
+                item['nombre'],
+                item['tipo_deporte'],
+                str(item['num_reservas']),
+                f"{item['total_horas']:.1f}h",
+                f"${item['total_ingresos']:,.2f}"
+            ])
+        
+        table = Table(data, colWidths=[0.5*inch, 1.8*inch, 1*inch, 0.8*inch, 0.8*inch, 1.2*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#84cc16')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+        ]))
+        
+        elements.append(table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # REPORTE 3: Ranking de Canchas por Número de Reservas
+    if canchas_stats:
+        elements.append(Paragraph("3. Ranking de Canchas Más Utilizadas", subtitle_style))
+        
+        canchas_ranking = sorted(canchas_stats, key=lambda x: -x['num_reservas'])[:10]
+        
+        data = [['Posición', 'Cancha', 'Tipo Deporte', 'Reservas', 'Ingresos']]
+        for idx, item in enumerate(canchas_ranking, 1):
+            data.append([
+                f"{idx}°",
+                item['nombre'],
+                item['tipo_deporte'],
+                str(item['num_reservas']),
+                f"${item['total_ingresos']:,.2f}"
+            ])
+        
+        table = Table(data, colWidths=[0.8*inch, 2*inch, 1.2*inch, 1*inch, 1.2*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+        ]))
+        
+        elements.append(table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # REPORTE 4: Estadísticas Mensuales (últimos 6 meses)
+    elements.append(PageBreak())
+    elements.append(Paragraph("4. Estadísticas de los Últimos 6 Meses", subtitle_style))
+    
+    hoy = timezone.now()
+    meses_data = []
+    
+    for i in range(5, -1, -1):
+        mes_actual = hoy - relativedelta(months=i)
+        mes_num = mes_actual.month
+        anio_num = mes_actual.year
+        
+        reservas_mes = Reserva.objects.filter(
+            fecha_hora_inicio__month=mes_num,
+            fecha_hora_inicio__year=anio_num
+        )
+        
+        total_reservas = reservas_mes.count()
+        total_horas = 0
+        
+        for reserva in reservas_mes:
+            duracion = (reserva.fecha_hora_fin - reserva.fecha_hora_inicio).total_seconds() / 3600
+            total_horas += duracion
+        
+        meses_data.append({
+            'mes': mes_actual.strftime('%B'),
+            'anio': anio_num,
+            'reservas': total_reservas,
+            'horas': total_horas
+        })
+    
+    if meses_data:
+        data = [['Mes', 'Año', 'Reservas', 'Horas Totales']]
+        for item in meses_data:
+            data.append([
+                item['mes'],
+                str(item['anio']),
+                str(item['reservas']),
+                f"{item['horas']:.1f}h"
+            ])
+        
+        table = Table(data, colWidths=[1.5*inch, 1*inch, 1.5*inch, 1.5*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#84cc16')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+        ]))
+        
+        elements.append(table)
+    
+    # RESUMEN FINAL
+    elements.append(Spacer(1, 0.5*inch))
+    total_reservas_periodo = reservas.count()
+    
+    # Calcular ingresos totales
+    total_ingresos_periodo = 0
+    for reserva in reservas:
+        try:
+            pago = Pago.objects.filter(reserva=reserva).first()
+            if pago:
+                total_ingresos_periodo += float(pago.monto_total)
+            else:
+                total_ingresos_periodo += float(reserva.calcular_costo_total())
+        except Exception:
+            total_ingresos_periodo += float(reserva.calcular_costo_total())
+    
+    resumen_text = f"""
+    <b>Resumen del Período {mes_seleccionado}/{anio_seleccionado}:</b><br/>
+    • Total de reservas: {total_reservas_periodo}<br/>
+    • Ingresos totales: ${total_ingresos_periodo:,.2f}<br/>
+    • Clientes únicos: {reservas.values('cliente').distinct().count()}<br/>
+    • Canchas utilizadas: {reservas.values('cancha').distinct().count()}
+    """
+    
+    elements.append(Paragraph(resumen_text, normal_style))
+    
+    # Footer
+    elements.append(Spacer(1, 0.5*inch))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph(
+        f"Documento generado automáticamente - {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}",
+        footer_style
+    ))
+    
+    # Construir PDF
+    doc.build(elements)
+    
+    # Preparar respuesta
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    filename = f"reporte_canchas_{mes_seleccionado}_{anio_seleccionado}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
 
 
 # ========== VISTAS DE TORNEOS ==========
@@ -1376,8 +1746,17 @@ def reserva_crear_pago_mercadopago(request, pk):
     
     # Verificar que la reserva tenga un pago asociado
     if not hasattr(reserva, 'pago'):
-        messages.error(request, 'La reserva no tiene un pago asociado.')
-        return redirect('reserva_detalle', pk=pk)
+        # Si no existe, crear el pago automáticamente
+        try:
+            costo_total = reserva.calcular_costo_total()
+            Pago.objects.create(
+                reserva=reserva,
+                monto_total=costo_total,
+                estado='PENDIENTE'
+            )
+        except Exception as e:
+            messages.error(request, f'Error al crear el pago: {str(e)}')
+            return redirect('reserva_detalle', pk=pk)
     
     pago = reserva.pago
     
@@ -1396,10 +1775,16 @@ def reserva_crear_pago_mercadopago(request, pk):
         # Inicializar SDK de MercadoPago
         sdk = mercadopago.SDK(access_token)
         
-        # Construir URLs de retorno
-        success_url = request.build_absolute_uri(f'/reservas/{pk}/pago-exitoso/')
-        pending_url = request.build_absolute_uri(f'/reservas/{pk}/pago-pendiente/')
-        failure_url = request.build_absolute_uri(f'/reservas/{pk}/pago-fallido/')
+        # Construir URLs de retorno absolutas
+        from django.urls import reverse
+        success_url = request.build_absolute_uri(reverse('reserva_pago_exitoso', kwargs={'pk': pk}))
+        pending_url = request.build_absolute_uri(reverse('reserva_pago_pendiente', kwargs={'pk': pk}))
+        failure_url = request.build_absolute_uri(reverse('reserva_pago_fallido', kwargs={'pk': pk}))
+        
+        # Para debug: ver las URLs generadas
+        print(f"Success URL: {success_url}")
+        print(f"Pending URL: {pending_url}")
+        print(f"Failure URL: {failure_url}")
         
         # Crear preferencia de pago
         preference_data = {
@@ -1416,15 +1801,26 @@ def reserva_crear_pago_mercadopago(request, pk):
                 "name": reserva.cliente.nombre,
                 "surname": reserva.cliente.apellido,
                 "email": reserva.cliente.email,
+                "phone": {
+                    "area_code": "11",
+                    "number": "1234-5678"
+                },
+                "identification": {
+                    "type": "DNI",
+                    "number": "12345678"
+                },
+                "address": {
+                    "zip_code": "1000",
+                    "street_name": "Calle Falsa",
+                    "street_number": 123
+                }
             },
             "back_urls": {
                 "success": success_url,
-                "pending": pending_url,
-                "failure": failure_url
+                "failure": failure_url,
+                "pending": pending_url
             },
-            "auto_return": "approved",
             "external_reference": str(reserva.id),
-            "notification_url": request.build_absolute_uri('/mercadopago/webhook/'),
             "statement_descriptor": "RESERVA CANCHA"
         }
         
@@ -1446,7 +1842,8 @@ def reserva_crear_pago_mercadopago(request, pk):
                 messages.error(request, 'Error al obtener la URL de pago de MercadoPago.')
                 return redirect('reserva_detalle', pk=pk)
         else:
-            messages.error(request, f'Error al crear la preferencia de pago: {preference_response.get("message", "Error desconocido")}')
+            error_msg = preference_response.get("response", {}).get("message", "Error desconocido")
+            messages.error(request, f'Error al crear la preferencia de pago: {error_msg}')
             return redirect('reserva_detalle', pk=pk)
             
     except Exception as e:
@@ -1483,14 +1880,24 @@ def reserva_pago_exitoso(request, pk):
                         pago.mp_payment_type = payment.get("payment_type_id", "")
                         
                         if payment.get("status") == "approved":
-                            pago.marcar_como_pagado('MERCADOPAGO', payment_id)
-                            messages.success(request, '¡Pago realizado exitosamente!')
+                            if pago.estado != 'PAGADO':
+                                pago.marcar_como_pagado('MERCADOPAGO', payment_id)
+                            messages.success(request, '¡Pago realizado exitosamente! Tu reserva ha sido confirmada.')
                         elif payment.get("status") == "pending":
-                            messages.info(request, 'El pago está pendiente de confirmación.')
+                            pago.save()
+                            messages.info(request, 'El pago está pendiente de confirmación. Te notificaremos cuando se confirme.')
+                        elif payment.get("status") == "in_process":
+                            pago.save()
+                            messages.info(request, 'El pago está en proceso. Te notificaremos cuando se confirme.')
                         else:
+                            pago.save()
                             messages.warning(request, f'El pago tiene estado: {payment.get("status")}')
+                    else:
+                        messages.warning(request, 'No se pudo verificar el estado del pago. Por favor, contacta al administrador.')
+                else:
+                    messages.warning(request, 'No se recibió información del pago.')
             except Exception as e:
-                messages.warning(request, f'No se pudo verificar el estado del pago: {str(e)}')
+                messages.error(request, f'Error al verificar el pago: {str(e)}')
     
     return redirect('reserva_detalle', pk=pk)
 
@@ -1498,14 +1905,37 @@ def reserva_pago_exitoso(request, pk):
 def reserva_pago_pendiente(request, pk):
     """Página cuando el pago está pendiente"""
     reserva = get_object_or_404(Reserva, pk=pk)
-    messages.info(request, 'Tu pago está pendiente de confirmación. Te notificaremos cuando se confirme.')
+    
+    # Intentar obtener información del pago si está disponible
+    payment_id = request.GET.get('payment_id')
+    if payment_id and hasattr(reserva, 'pago'):
+        from django.conf import settings
+        import mercadopago
+        
+        access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)
+        if access_token and access_token != 'TU_ACCESS_TOKEN_AQUI':
+            try:
+                sdk = mercadopago.SDK(access_token)
+                payment_response = sdk.payment().get(payment_id)
+                
+                if payment_response["status"] == 200:
+                    payment = payment_response["response"]
+                    pago = reserva.pago
+                    pago.mp_payment_id = payment_id
+                    pago.mp_status = payment.get("status", "pending")
+                    pago.mp_payment_type = payment.get("payment_type_id", "")
+                    pago.save()
+            except Exception:
+                pass
+    
+    messages.info(request, 'Tu pago está pendiente de confirmación. Te notificaremos por email cuando se confirme.')
     return redirect('reserva_detalle', pk=pk)
 
 
 def reserva_pago_fallido(request, pk):
     """Página cuando el pago falló"""
     reserva = get_object_or_404(Reserva, pk=pk)
-    messages.error(request, 'El pago no pudo ser procesado. Por favor, intenta nuevamente.')
+    messages.error(request, 'El pago no pudo ser procesado. Por favor, verifica tus datos e intenta nuevamente.')
     return redirect('reserva_detalle', pk=pk)
 
 
@@ -1522,8 +1952,8 @@ def mercadopago_webhook(request):
     try:
         # Obtener datos del webhook
         data = json.loads(request.body)
-        topic = data.get('type')
-        resource_id = data.get('data', {}).get('id')
+        topic = data.get('type') or data.get('topic')  # Soportar ambos formatos
+        resource_id = data.get('data', {}).get('id') or data.get('id')  # Soportar ambos formatos
         
         if not resource_id:
             return JsonResponse({'status': 'error', 'message': 'No resource ID'}, status=400)
@@ -1548,23 +1978,38 @@ def mercadopago_webhook(request):
                         
                         if hasattr(reserva, 'pago'):
                             pago = reserva.pago
-                            pago.mp_payment_id = resource_id
+                            pago.mp_payment_id = str(resource_id)
                             pago.mp_status = payment.get("status")
                             pago.mp_payment_type = payment.get("payment_type_id", "")
                             
                             # Actualizar estado según el estado del pago
                             if payment.get("status") == "approved":
                                 if pago.estado != 'PAGADO':
-                                    pago.marcar_como_pagado('MERCADOPAGO', resource_id)
-                            elif payment.get("status") in ["rejected", "cancelled", "refunded", "charged_back"]:
-                                # Si el pago fue rechazado o cancelado, mantener pendiente o marcar según corresponda
-                                pass
+                                    pago.marcar_como_pagado('MERCADOPAGO', str(resource_id))
+                            elif payment.get("status") in ["rejected", "cancelled"]:
+                                # Mantener como pendiente para que puedan reintentar
+                                pago.save()
+                            elif payment.get("status") in ["refunded", "charged_back"]:
+                                # Marcar como reembolsado si existe ese estado
+                                pago.estado = 'REEMBOLSADO'
+                                pago.save()
+                                reserva.estado = 'CANCELADA'
+                                reserva.save()
+                            else:
+                                # Para otros estados (pending, in_process, etc.)
+                                pago.save()
                             
-                            pago.save()
-                    except (Reserva.DoesNotExist, ValueError):
-                        pass
+                            # Log para debugging (opcional, comentar en producción)
+                            print(f"Webhook: Pago {resource_id} actualizado - Estado: {payment.get('status')}")
+                            
+                    except (Reserva.DoesNotExist, ValueError) as e:
+                        print(f"Webhook error: {str(e)}")
+                        return JsonResponse({'status': 'error', 'message': 'Reserva not found'}, status=404)
         
         return JsonResponse({'status': 'ok'}, status=200)
         
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
     except Exception as e:
+        print(f"Webhook error: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

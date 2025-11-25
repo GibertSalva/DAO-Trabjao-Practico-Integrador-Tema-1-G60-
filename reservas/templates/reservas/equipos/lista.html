@@ -3,129 +3,153 @@
 {% block title %}Equipos - Sistema de Reservas{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
- 
-<div class="text-sm breadcrumbs mb-4">
-    <ul>
-        <li><a href="{% url 'home' %}">Inicio</a></li>
-        <li>Equipos</li>
-    </ul>
-</div>
-
-<!-- Header -->
-  <div class="card bg-base-100 shadow-xl">
+<div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-<div class="flex justify-between items-center ">
-    <div class="flex items-center gap-3">
-        <h2 class="text-3xl font-bold flex items-center gap-2">
-            Equipos
-        </h2>
-        <span class="badge badge-lg badge-primary">{{ equipos|length }}</span>
-    </div>
-    <a href="{% url 'equipo_crear' %}" class="btn btn-primary gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-        Crear Equipo
-    </a>
-</div>
-</div>
-</div>
-{% if equipos %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-    {% for equipo in equipos %}
-    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-        <div class="card-body">
-            <div class="flex items-start justify-between">
-                <h2 class="card-title text-xl">
-                    {% if equipo.logo %}
-                    <span class="text-3xl">{{ equipo.logo }}</span>
-                    {% endif %}
-                    {{ equipo.nombre }}
-                </h2>
-                <div class="badge {% if equipo.activo %}badge-success{% else %}badge-ghost{% endif %}">
-                    {% if equipo.activo %}Activo{% else %}Inactivo{% endif %}
-                </div>
+        <!-- Header con título y acciones -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div class="flex items-center gap-3">
+                <h2 class="card-title text-3xl">Equipos</h2>
+                <span class="badge badge-lg badge-primary">{{ equipos|length }} total</span>
             </div>
-            
-            <div class="divider my-2"></div>
-            
-            <!-- Torneos -->
-            <div class="flex items-center gap-2 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                <span class="font-semibold">Torneos:</span>
-                <span class="badge badge-secondary">{{ equipo.torneos.count }}</span>
-            </div>
-            
-            <!-- Fecha Creación -->
-            <div class="flex items-center gap-2 text-sm text-base-content/60">
+            <a href="{% url 'equipo_crear' %}" class="btn btn-primary gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <span>Creado: {{ equipo.fecha_creacion|date:"d/m/Y" }}</span>
-            </div>
-            
-            <div class="card-actions justify-end mt-4">
-                <a href="{% url 'equipo_detalle' equipo.pk %}" class="btn btn-sm btn-ghost gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Ver
-                </a>
-                <a href="{% url 'equipo_editar' equipo.pk %}" class="btn btn-sm btn-primary gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Editar
-                </a>
+                Nuevo Equipo
+            </a>
+        </div>
+
+        {% if equipos %}
+        <div class="overflow-x-auto">
+            <table id="equiposTable" class="table w-full table-compact">
+                <thead>
+                    <tr class="bg-base-200">
+                        <th class="w-12">#</th>
+                        <th>Equipo</th>
+                        <th class="hidden md:table-cell">Torneos</th>
+                        <th class="hidden lg:table-cell">Fecha Creación</th>
+                        <th class="hidden xl:table-cell">Estado</th>
+                        <th class="w-24 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="equiposTableBody">
+                    {% for equipo in equipos %}
+                    <tr class="hover border-b border-base-200">
+                        <td class="font-mono text-xs text-base-content/60">{{ equipo.id }}</td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-lg w-10 h-10">
+                                        <span class="text-sm font-semibold">{{ equipo.nombre.0 }}{{ equipo.nombre.1|default:"" }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-base truncate">{{ equipo.nombre }}</div>
+                                    <div class="text-sm text-base-content/60 sm:hidden">{{ equipo.torneos.count }} torneo(s)</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="hidden md:table-cell">
+                            <span class="badge badge-secondary badge-sm">{{ equipo.torneos.count }}</span>
+                        </td>
+                        <td class="hidden lg:table-cell">
+                            <span class="text-xs text-base-content/60">{{ equipo.fecha_creacion|date:"d/m/Y" }}</span>
+                        </td>
+                        <td class="hidden xl:table-cell">
+                            {% if equipo.activo %}
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Activo
+                                </span>
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                    Inactivo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown dropdown-end">
+                                <label tabindex="0" class="btn btn-ghost btn-sm" style="color: #1e3a8a !important;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
+                                    </svg>
+                                </label>
+                                <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-box w-52 border-2 border-gray-200 z-50">
+                                    <li>
+                                        <a href="{% url 'equipo_detalle' equipo.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Ver detalles
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'equipo_editar' equipo.id %}" class="gap-2 text-gray-900 hover:bg-gray-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Editar
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'equipo_eliminar' equipo.id %}" class="gap-2 text-error hover:bg-red-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            Eliminar
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+        
+        <!-- Paginación -->
+        {% if equipos.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <div class="btn-group">
+                {% if equipos.has_previous %}
+                    <a href="?page=1" class="btn btn-sm">«</a>
+                    <a href="?page={{ equipos.previous_page_number }}" class="btn btn-sm">‹</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">«</button>
+                    <button class="btn btn-sm btn-disabled">‹</button>
+                {% endif %}
+                
+                <button class="btn btn-sm btn-active">Página {{ equipos.number }} de {{ equipos.paginator.num_pages }}</button>
+                
+                {% if equipos.has_next %}
+                    <a href="?page={{ equipos.next_page_number }}" class="btn btn-sm">›</a>
+                    <a href="?page={{ equipos.paginator.num_pages }}" class="btn btn-sm">»</a>
+                {% else %}
+                    <button class="btn btn-sm btn-disabled">›</button>
+                    <button class="btn btn-sm btn-disabled">»</button>
+                {% endif %}
             </div>
         </div>
-    </div>
-    {% endfor %}
-</div>
-
-<!-- Paginación -->
-{% if equipos.has_other_pages %}
-<div class="flex justify-center mt-6">
-    <div class="btn-group">
-        {% if equipos.has_previous %}
-            <a href="?page=1" class="btn btn-sm">«</a>
-            <a href="?page={{ equipos.previous_page_number }}" class="btn btn-sm">‹</a>
-        {% else %}
-            <button class="btn btn-sm btn-disabled">«</button>
-            <button class="btn btn-sm btn-disabled">‹</button>
+        <div class="text-center mt-2 text-sm text-base-content/60">
+            Mostrando {{ equipos.start_index }} - {{ equipos.end_index }} de {{ equipos.paginator.count }} equipo(s)
+        </div>
         {% endif %}
-        
-        <button class="btn btn-sm btn-active">Página {{ equipos.number }} de {{ equipos.paginator.num_pages }}</button>
-        
-        {% if equipos.has_next %}
-            <a href="?page={{ equipos.next_page_number }}" class="btn btn-sm">›</a>
-            <a href="?page={{ equipos.paginator.num_pages }}" class="btn btn-sm">»</a>
-        {% else %}
-            <button class="btn btn-sm btn-disabled">›</button>
-            <button class="btn btn-sm btn-disabled">»</button>
-        {% endif %}
-    </div>
-</div>
-<div class="text-center mt-2 text-sm text-base-content/60">
-    Mostrando {{ equipos.start_index }} - {{ equipos.end_index }} de {{ equipos.paginator.count }} equipos
-</div>
-{% endif %}
 
-{% else %}
-<div class="card bg-base-100 shadow-xl">
-    <div class="card-body text-center py-12">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-base-content/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-        <h3 class="text-2xl font-bold mt-4">No hay equipos registrados</h3>
-        <p class="text-base-content/60 mt-2">
-            Crea tu primer equipo para poder inscribirlo en torneos.
-        </p>
-        <div class="mt-6">
+        {% else %}
+        <div class="text-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <p class="text-lg text-base-content/60 mb-2">No hay equipos registrados</p>
+            <p class="text-sm text-base-content/40 mb-4">Crea tu primer equipo para poder inscribirlo en torneos</p>
             <a href="{% url 'equipo_crear' %}" class="btn btn-primary gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -133,7 +157,7 @@
                 Crear Primer Equipo
             </a>
         </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
 {% endblock %}

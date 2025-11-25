@@ -251,13 +251,22 @@ window.addEventListener('pageshow', function(event) {
                 
                 <!-- Botón de pago con MercadoPago -->
                 {% if reserva.estado == 'PENDIENTE' and reserva.pago.estado == 'PENDIENTE' %}
-                <div class="mt-6 flex justify-center">
+                <div class="mt-6 flex justify-center gap-4">
                     <a href="{% url 'reserva_pagar_mercadopago' reserva.id %}" class="btn btn-success btn-lg gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
                         Pagar con MercadoPago
                     </a>
+                    <form method="POST" action="{% url 'reserva_marcar_pagado' reserva.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-info btn-lg gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Marcar como Pagado (Demo)
+                        </button>
+                    </form>
                 </div>
                 {% endif %}
                 

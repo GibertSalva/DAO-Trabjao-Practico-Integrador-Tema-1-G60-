@@ -32,6 +32,7 @@ urlpatterns = [
     path('reservas/<int:pk>/editar/', views.reserva_editar, name='reserva_editar'),
     path('reservas/<int:pk>/eliminar/', views.reserva_eliminar, name='reserva_eliminar'),
     path('reservas/<int:pk>/marcar-pagada/', views.reserva_marcar_pagada, name='reserva_marcar_pagada'),
+    path('reservas/<int:pk>/marcar-como-pagado/', views.reserva_marcar_como_pagado, name='reserva_marcar_pagado'),
     
     # URLs de MercadoPago
     path('reservas/<int:pk>/pagar-mercadopago/', views.reserva_crear_pago_mercadopago, name='reserva_pagar_mercadopago'),
