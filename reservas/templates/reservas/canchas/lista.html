@@ -2,7 +2,33 @@
 
 {% block title %}Canchas - Sistema de Reservas{% endblock %}
 
+
+
 {% block content %}
+
+{% if tipos_cancha %}
+<div class="card bg-base-100 shadow-xl mt-6 mb-6">
+    <div class="card-body">
+        <h3 class="card-title text-2xl mb-6">
+            Tipos de Cancha
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {% for tipo in tipos_cancha %}
+            <div class="card bg-gradient-to-br from-base-200 to-base-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="card-body p-6">
+                    <h4 class="text-lg font-bold text-primary mb-2">{{ tipo.nombre }}</h4>
+                    <div class="text-4xl font-bold text-primary mb-3">{{ tipo.canchas.count }}</div>
+                    <p class="text-sm text-base-content/70 line-clamp-2">{{ tipo.descripcion|default:"Cancha deportiva disponible" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <!-- Header -->
@@ -203,28 +229,6 @@
         {% endif %}
     </div>
 </div>
-
-<!-- Tipos de Cancha -->
-{% if tipos_cancha %}
-<div class="card bg-base-100 shadow-xl mt-6">
-    <div class="card-body">
-        <h3 class="card-title text-2xl mb-6">
-            Tipos de Cancha
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {% for tipo in tipos_cancha %}
-            <div class="card bg-gradient-to-br from-base-200 to-base-300 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div class="card-body p-6">
-                    <h4 class="text-lg font-bold text-primary mb-2">{{ tipo.nombre }}</h4>
-                    <div class="text-4xl font-bold text-primary mb-3">{{ tipo.canchas.count }}</div>
-                    <p class="text-sm text-base-content/70 line-clamp-2">{{ tipo.descripcion|default:"Cancha deportiva disponible" }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-{% endif %}
 
 
 {% endblock %}

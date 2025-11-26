@@ -123,11 +123,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuración de MercadoPago
-MERCADOPAGO_ACCESS_TOKEN = 'APP_USR-7259166041997939-112420-c7aac8fe0428870c1d88413cd8488e5d-3014215273'  # Reemplazar con tu Access Token de MercadoPago
-MERCADOPAGO_PUBLIC_KEY = 'APP_USR-170d7fab-250e-46dd-9382-e5eaa8d1a951'  # Reemplazar con tu Public Key de MercadoPago
-MERCADOPAGO_WEBHOOK_SECRET = 'TU_WEBHOOK_SECRET_AQUI'  # Opcional: para validar webhooks
-
-# URL base para callbacks de MercadoPago
-MERCADOPAGO_SUCCESS_URL = 'http://localhost:8000/reservas/{reserva_id}/pago-exitoso/'
-MERCADOPAGO_PENDING_URL = 'http://localhost:8000/reservas/{reserva_id}/pago-pendiente/'
-MERCADOPAGO_FAILURE_URL = 'http://localhost:8000/reservas/{reserva_id}/pago-fallido/'
+MERCADOPAGO_ACCESS_TOKEN = 'APP_USR-7259166041997939-112420-c7aac8fe0428870c1d88413cd8488e5d-3014215273'
+MERCADOPAGO_PUBLIC_KEY = 'APP_USR-170d7fab-250e-46dd-9382-e5eaa8d1a951'

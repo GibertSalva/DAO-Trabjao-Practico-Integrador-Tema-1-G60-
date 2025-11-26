@@ -13,13 +13,10 @@ from decimal import Decimal
 import json
 from .models import Cliente, Cancha, TipoCancha, Reserva, Servicio, Torneo, Pago, Equipo, Partido
 
-# Aca creamos las vistas para la app 'reservas'
 
-# ========== VISTA PRINCIPAL ==========
+#  VISTA PRINCIPAL 
 
 def home(request):
-    """Página principal del sistema"""
-    # Calcular torneos vigentes (activos o próximos)
     hoy = timezone.now().date()
     torneos_vigentes = Torneo.objects.filter(fecha_fin__gte=hoy).count()
     
@@ -32,10 +29,7 @@ def home(request):
     }
     return render(request, 'reservas/home.html', context)
 
-# ========== VISTAS DE CLIENTES ==========
-
 def cliente_lista(request):
-    """Listar todos los clientes con paginación y búsqueda"""
     clientes_list = Cliente.objects.all()
     
     # Búsqueda del lado del servidor
@@ -69,7 +63,6 @@ def cliente_lista(request):
     return render(request, 'reservas/clientes/lista.html', context)
 
 def cliente_crear(request):
-    """Crear un nuevo cliente"""
     if request.method == 'POST':
         try:
             # Verificar si el DNI ya existe
@@ -182,8 +175,6 @@ def cliente_detalle(request, pk):
         'reservas': reservas
     })
 
-# ========== VISTAS DE CANCHAS ==========
-
 def cancha_lista(request):
     """Listar todas las canchas con paginación y búsqueda"""
     canchas_list = Cancha.objects.all().select_related('tipo_cancha')
@@ -225,7 +216,8 @@ def cancha_crear(request):
             cancha = Cancha.objects.create(
                 nombre=request.POST['nombre'],
                 tipo_cancha=tipo_cancha,
-                precio_por_hora=request.POST['precio_por_hora']
+                precio_por_hora=request.POST['precio_por_hora'],
+                activa=request.POST.get('activa') == 'on'
             )
             messages.success(request, f'Cancha {cancha.nombre} creada exitosamente.')
             return redirect('cancha_lista')
@@ -245,6 +237,7 @@ def cancha_editar(request, pk):
             cancha.nombre = request.POST['nombre']
             cancha.tipo_cancha = tipo_cancha
             cancha.precio_por_hora = request.POST['precio_por_hora']
+            cancha.activa = request.POST.get('activa') == 'on'
             cancha.save()
             messages.success(request, f'Cancha {cancha.nombre} actualizada exitosamente.')
             return redirect('cancha_lista')
@@ -277,8 +270,6 @@ def cancha_detalle(request, pk):
         'cancha': cancha,
         'reservas': reservas
     })
-
-# ========== VISTAS DE RESERVAS ==========
 
 def reserva_lista(request):
     """Listar todas las reservas con filtros opcionales y paginación"""
@@ -611,7 +602,6 @@ def reserva_marcar_pagada(request, pk):
 
 
 def reserva_marcar_como_pagado(request, pk):
-    """Vista simplificada para marcar una reserva como pagada (para demostración)"""
     reserva = get_object_or_404(Reserva, pk=pk)
     
     if request.method == 'POST':
@@ -622,17 +612,14 @@ def reserva_marcar_como_pagado(request, pk):
         if hasattr(reserva, 'pago'):
             pago = reserva.pago
             if pago.estado != 'PAGADO':
-                # Usar el método del modelo que ya existe
-                pago.marcar_como_pagado('EFECTIVO', 'MANUAL-DEMO')
-                messages.success(request, '✅ Reserva marcada como pagada exitosamente (modo demostración).')
+                pago.marcar_como_pagado('EFECTIVO', 'MANUAL')
+                messages.success(request, '✅ Reserva marcada como pagada exitosamente.')
             else:
                 messages.info(request, 'El pago ya estaba registrado como pagado.')
         else:
             messages.error(request, 'Esta reserva no tiene un pago asociado.')
     
     return redirect('reserva_detalle', pk=pk)
-
-# ========== VISTA DE REPORTES ==========
 
 def reportes(request):
     """Página de reportes según consigna: 
@@ -656,7 +643,7 @@ def reportes(request):
     else:
         fin_mes = timezone.make_aware(datetime(anio_seleccionado, mes_seleccionado + 1, 1))
     
-    # ===== REPORTE 1: Listado de reservas por cliente =====
+    # Reporte 1: Listado de reservas por cliente
     clientes_con_reservas = []
     clientes = Cliente.objects.all()
     
@@ -689,7 +676,7 @@ def reportes(request):
         key=lambda x: (-float(x['total_gasto']), -x['num_reservas'])
     )
     
-    # ===== REPORTE 2: Reservas por cancha en el período =====
+    # Reporte 2: Reservas por cancha en el período
     canchas_con_reservas = []
     canchas = Cancha.objects.all()
     
@@ -1164,8 +1151,6 @@ def reportes_pdf(request):
 
 
 
-# ========== VISTAS DE TORNEOS ==========
-
 def torneo_lista(request):
     """Listar todos los torneos con paginación"""
     # Obtener torneos y ordenarlos
@@ -1303,8 +1288,13 @@ def torneo_detalle(request, pk):
     ingresos_totales = ingresos_inscripciones + ingresos_reservas
     
     # Obtener estadísticas de partidos si existen
-    total_partidos = torneo.partidos.count()
-    partidos_completados = torneo.partidos.filter(estado='FINALIZADO').count()
+    partidos = torneo.partidos.all().order_by('-fecha_hora')
+    total_partidos = partidos.count()
+    partidos_completados = partidos.filter(estado='FINALIZADO').count()
+    partidos_pendientes = partidos.filter(estado='PENDIENTE').count()
+    
+    # Obtener últimos 5 partidos para mostrar en detalle
+    ultimos_partidos = partidos[:5]
     
     # Calcular días de duración y días restantes
     dias_duracion = (torneo.fecha_fin - torneo.fecha_inicio).days + 1
@@ -1324,8 +1314,10 @@ def torneo_detalle(request, pk):
         'ingresos_reservas': ingresos_reservas,
         'ingresos_totales': ingresos_totales,
         'reservas_count': reservas_torneo.count(),
+        'partidos': ultimos_partidos,
         'total_partidos': total_partidos,
         'partidos_completados': partidos_completados,
+        'partidos_pendientes': partidos_pendientes,
         'dias_duracion': dias_duracion,
         'dias_restantes': dias_restantes,
         'today_date': hoy,
@@ -1619,8 +1611,6 @@ def partido_registrar_resultado(request, pk):
     return render(request, 'reservas/torneos/registrar_resultado.html', context)
 
 
-# ========== VISTAS DE EQUIPOS (Independientes) ==========
-
 def equipo_lista(request):
     """Listar todos los equipos con paginación"""
     equipos_list = Equipo.objects.all().prefetch_related('torneos')
@@ -1732,21 +1722,13 @@ def equipo_eliminar(request, pk):
     }
     return render(request, 'reservas/equipos/confirmar_eliminar.html', context)
 
-
-# ================== FIN DE VISTAS DE TORNEOS Y EQUIPOS ==================
-
-# ========== VISTAS DE MERCADOPAGO ==========
-
 def reserva_crear_pago_mercadopago(request, pk):
-    """Crear una preferencia de pago en MercadoPago para una reserva"""
     from django.conf import settings
     import mercadopago
     
     reserva = get_object_or_404(Reserva, pk=pk)
     
-    # Verificar que la reserva tenga un pago asociado
     if not hasattr(reserva, 'pago'):
-        # Si no existe, crear el pago automáticamente
         try:
             costo_total = reserva.calcular_costo_total()
             Pago.objects.create(
@@ -1760,33 +1742,18 @@ def reserva_crear_pago_mercadopago(request, pk):
     
     pago = reserva.pago
     
-    # Verificar que el pago esté pendiente
     if pago.estado != 'PENDIENTE':
         messages.warning(request, 'Esta reserva ya fue pagada o cancelada.')
         return redirect('reserva_detalle', pk=pk)
     
-    # Verificar que tengamos las credenciales configuradas
     access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)
     if not access_token or access_token == 'TU_ACCESS_TOKEN_AQUI':
         messages.error(request, 'MercadoPago no está configurado correctamente. Contacte al administrador.')
         return redirect('reserva_detalle', pk=pk)
     
     try:
-        # Inicializar SDK de MercadoPago
         sdk = mercadopago.SDK(access_token)
         
-        # Construir URLs de retorno absolutas
-        from django.urls import reverse
-        success_url = request.build_absolute_uri(reverse('reserva_pago_exitoso', kwargs={'pk': pk}))
-        pending_url = request.build_absolute_uri(reverse('reserva_pago_pendiente', kwargs={'pk': pk}))
-        failure_url = request.build_absolute_uri(reverse('reserva_pago_fallido', kwargs={'pk': pk}))
-        
-        # Para debug: ver las URLs generadas
-        print(f"Success URL: {success_url}")
-        print(f"Pending URL: {pending_url}")
-        print(f"Failure URL: {failure_url}")
-        
-        # Crear preferencia de pago
         preference_data = {
             "items": [
                 {
@@ -1800,41 +1767,20 @@ def reserva_crear_pago_mercadopago(request, pk):
             "payer": {
                 "name": reserva.cliente.nombre,
                 "surname": reserva.cliente.apellido,
-                "email": reserva.cliente.email,
-                "phone": {
-                    "area_code": "11",
-                    "number": "1234-5678"
-                },
-                "identification": {
-                    "type": "DNI",
-                    "number": "12345678"
-                },
-                "address": {
-                    "zip_code": "1000",
-                    "street_name": "Calle Falsa",
-                    "street_number": 123
-                }
-            },
-            "back_urls": {
-                "success": success_url,
-                "failure": failure_url,
-                "pending": pending_url
+                "email": reserva.cliente.email
             },
             "external_reference": str(reserva.id),
             "statement_descriptor": "RESERVA CANCHA"
         }
         
-        # Crear la preferencia
         preference_response = sdk.preference().create(preference_data)
         
         if preference_response["status"] == 201:
             preference = preference_response["response"]
             
-            # Guardar el preference_id en el pago
             pago.mp_preference_id = preference["id"]
             pago.save()
             
-            # Redirigir a MercadoPago
             init_point = preference.get("init_point")
             if init_point:
                 return redirect(init_point)
@@ -1851,165 +1797,3 @@ def reserva_crear_pago_mercadopago(request, pk):
         return redirect('reserva_detalle', pk=pk)
 
 
-def reserva_pago_exitoso(request, pk):
-    """Página de éxito después del pago"""
-    reserva = get_object_or_404(Reserva, pk=pk)
-    
-    # Obtener información del pago desde MercadoPago
-    if hasattr(reserva, 'pago') and reserva.pago.mp_preference_id:
-        from django.conf import settings
-        import mercadopago
-        
-        access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)
-        if access_token and access_token != 'TU_ACCESS_TOKEN_AQUI':
-            try:
-                sdk = mercadopago.SDK(access_token)
-                payment_id = request.GET.get('payment_id')
-                status = request.GET.get('status')
-                
-                if payment_id:
-                    # Obtener información del pago
-                    payment_response = sdk.payment().get(payment_id)
-                    if payment_response["status"] == 200:
-                        payment = payment_response["response"]
-                        
-                        # Actualizar el pago
-                        pago = reserva.pago
-                        pago.mp_payment_id = payment_id
-                        pago.mp_status = payment.get("status", status)
-                        pago.mp_payment_type = payment.get("payment_type_id", "")
-                        
-                        if payment.get("status") == "approved":
-                            if pago.estado != 'PAGADO':
-                                pago.marcar_como_pagado('MERCADOPAGO', payment_id)
-                            messages.success(request, '¡Pago realizado exitosamente! Tu reserva ha sido confirmada.')
-                        elif payment.get("status") == "pending":
-                            pago.save()
-                            messages.info(request, 'El pago está pendiente de confirmación. Te notificaremos cuando se confirme.')
-                        elif payment.get("status") == "in_process":
-                            pago.save()
-                            messages.info(request, 'El pago está en proceso. Te notificaremos cuando se confirme.')
-                        else:
-                            pago.save()
-                            messages.warning(request, f'El pago tiene estado: {payment.get("status")}')
-                    else:
-                        messages.warning(request, 'No se pudo verificar el estado del pago. Por favor, contacta al administrador.')
-                else:
-                    messages.warning(request, 'No se recibió información del pago.')
-            except Exception as e:
-                messages.error(request, f'Error al verificar el pago: {str(e)}')
-    
-    return redirect('reserva_detalle', pk=pk)
-
-
-def reserva_pago_pendiente(request, pk):
-    """Página cuando el pago está pendiente"""
-    reserva = get_object_or_404(Reserva, pk=pk)
-    
-    # Intentar obtener información del pago si está disponible
-    payment_id = request.GET.get('payment_id')
-    if payment_id and hasattr(reserva, 'pago'):
-        from django.conf import settings
-        import mercadopago
-        
-        access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)
-        if access_token and access_token != 'TU_ACCESS_TOKEN_AQUI':
-            try:
-                sdk = mercadopago.SDK(access_token)
-                payment_response = sdk.payment().get(payment_id)
-                
-                if payment_response["status"] == 200:
-                    payment = payment_response["response"]
-                    pago = reserva.pago
-                    pago.mp_payment_id = payment_id
-                    pago.mp_status = payment.get("status", "pending")
-                    pago.mp_payment_type = payment.get("payment_type_id", "")
-                    pago.save()
-            except Exception:
-                pass
-    
-    messages.info(request, 'Tu pago está pendiente de confirmación. Te notificaremos por email cuando se confirme.')
-    return redirect('reserva_detalle', pk=pk)
-
-
-def reserva_pago_fallido(request, pk):
-    """Página cuando el pago falló"""
-    reserva = get_object_or_404(Reserva, pk=pk)
-    messages.error(request, 'El pago no pudo ser procesado. Por favor, verifica tus datos e intenta nuevamente.')
-    return redirect('reserva_detalle', pk=pk)
-
-
-@csrf_exempt
-def mercadopago_webhook(request):
-    """Recibir notificaciones de webhook de MercadoPago"""
-    from django.conf import settings
-    import mercadopago
-    import json
-    
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
-    
-    try:
-        # Obtener datos del webhook
-        data = json.loads(request.body)
-        topic = data.get('type') or data.get('topic')  # Soportar ambos formatos
-        resource_id = data.get('data', {}).get('id') or data.get('id')  # Soportar ambos formatos
-        
-        if not resource_id:
-            return JsonResponse({'status': 'error', 'message': 'No resource ID'}, status=400)
-        
-        access_token = getattr(settings, 'MERCADOPAGO_ACCESS_TOKEN', None)
-        if not access_token or access_token == 'TU_ACCESS_TOKEN_AQUI':
-            return JsonResponse({'status': 'error', 'message': 'MercadoPago not configured'}, status=500)
-        
-        sdk = mercadopago.SDK(access_token)
-        
-        # Si es un pago, obtener información del pago
-        if topic == 'payment':
-            payment_response = sdk.payment().get(resource_id)
-            if payment_response["status"] == 200:
-                payment = payment_response["response"]
-                external_reference = payment.get("external_reference")
-                
-                if external_reference:
-                    try:
-                        reserva_id = int(external_reference)
-                        reserva = Reserva.objects.get(pk=reserva_id)
-                        
-                        if hasattr(reserva, 'pago'):
-                            pago = reserva.pago
-                            pago.mp_payment_id = str(resource_id)
-                            pago.mp_status = payment.get("status")
-                            pago.mp_payment_type = payment.get("payment_type_id", "")
-                            
-                            # Actualizar estado según el estado del pago
-                            if payment.get("status") == "approved":
-                                if pago.estado != 'PAGADO':
-                                    pago.marcar_como_pagado('MERCADOPAGO', str(resource_id))
-                            elif payment.get("status") in ["rejected", "cancelled"]:
-                                # Mantener como pendiente para que puedan reintentar
-                                pago.save()
-                            elif payment.get("status") in ["refunded", "charged_back"]:
-                                # Marcar como reembolsado si existe ese estado
-                                pago.estado = 'REEMBOLSADO'
-                                pago.save()
-                                reserva.estado = 'CANCELADA'
-                                reserva.save()
-                            else:
-                                # Para otros estados (pending, in_process, etc.)
-                                pago.save()
-                            
-                            # Log para debugging (opcional, comentar en producción)
-                            print(f"Webhook: Pago {resource_id} actualizado - Estado: {payment.get('status')}")
-                            
-                    except (Reserva.DoesNotExist, ValueError) as e:
-                        print(f"Webhook error: {str(e)}")
-                        return JsonResponse({'status': 'error', 'message': 'Reserva not found'}, status=404)
-        
-        return JsonResponse({'status': 'ok'}, status=200)
-        
-    except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"Webhook error: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

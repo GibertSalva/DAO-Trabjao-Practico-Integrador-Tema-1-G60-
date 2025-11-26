@@ -74,6 +74,20 @@
                 </label>
             </div>
             
+            <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" id="activa" name="activa" 
+                           class="toggle toggle-success" 
+                           {% if not cancha or cancha.activa %}checked{% endif %}>
+                    <div>
+                        <span class="label-text font-semibold">Cancha Activa</span>
+                        <p class="text-xs text-base-content/60 mt-1">
+                            Las canchas inactivas no estarán disponibles para nuevas reservas
+                        </p>
+                    </div>
+                </label>
+            </div>
+            
             <div class="divider"></div>
             
             <div class="flex gap-3 justify-end">

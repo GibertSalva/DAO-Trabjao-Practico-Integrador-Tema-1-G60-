@@ -49,6 +49,29 @@
         </div>
     </div>
 
+{% if torneo.estado == 'FINALIZADO' and rondas %}
+            {% with final_ronda=rondas|last %}
+                {% with final_partido=final_ronda.partidos|first %}
+                    {% if final_partido.ganador %}
+                        <div class="card bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 shadow-2xl mt-8 mb-8">
+                            <div class="card-body text-center">
+                                <h2 class="card-title text-4xl justify-center mb-4">
+                                    CAMPEÓN
+                                </h2>
+                                <p class="text-5xl font-bold mb-2">{{ final_partido.ganador.nombre }}</p>
+                                <p class="text-xl opacity-80">Ganador del {{ torneo.nombre }}</p>
+                                <div class="mt-4">
+                                    <span class="badge badge-lg bg-yellow-700 text-white border-none">
+                                        {{ final_partido.ganador.jugadores.count }} Jugadores
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            {% endwith %}
+        {% endif %}
+
     {% if not rondas %}
         <!-- No hay fixture generado -->
         <div class="alert alert-info">
@@ -166,28 +189,6 @@
         </div>
 
         <!-- Campeón (si el torneo está finalizado) -->
-        {% if torneo.estado == 'FINALIZADO' and rondas %}
-            {% with final_ronda=rondas|last %}
-                {% with final_partido=final_ronda.partidos|first %}
-                    {% if final_partido.ganador %}
-                        <div class="card bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 shadow-2xl mt-8">
-                            <div class="card-body text-center">
-                                <h2 class="card-title text-4xl justify-center mb-4">
-                                    CAMPEÓN
-                                </h2>
-                                <p class="text-5xl font-bold mb-2">{{ final_partido.ganador.nombre }}</p>
-                                <p class="text-xl opacity-80">Ganador del {{ torneo.nombre }}</p>
-                                <div class="mt-4">
-                                    <span class="badge badge-lg bg-yellow-700 text-white border-none">
-                                        {{ final_partido.ganador.jugadores.count }} Jugadores
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endwith %}
-            {% endwith %}
-        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

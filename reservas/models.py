@@ -3,55 +3,41 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.utils import timezone
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 import re
 
-# Aca definimos los modelos para la app 'reservas', estan acordes a la estructura planteada en el diagrama ER.
+# Configuración del negocio
+HORA_APERTURA = time(8, 0)
+HORA_CIERRE = time(23, 0)
+DURACION_MINIMA_RESERVA = 1
+DURACION_MAXIMA_RESERVA = 4
+MAX_RESERVAS_POR_CLIENTE_DIA = 3
 
-# ========== CONFIGURACIÓN DE HORARIOS DEL NEGOCIO ==========
-HORA_APERTURA = time(8, 0)  # 8:00 AM
-HORA_CIERRE = time(23, 0)   # 11:00 PM
-DURACION_MINIMA_RESERVA = 1  # 1 hora
-DURACION_MAXIMA_RESERVA = 4  # 4 horas
-MAX_RESERVAS_POR_CLIENTE_DIA = 3  # Máximo 3 reservas por día por cliente
-
-# ========== VALIDADORES PERSONALIZADOS ==========
-
+# Validadores
 def validar_dni_argentino(value):
-    """Valida que el DNI tenga formato argentino (7-8 dígitos) y no sea todo ceros"""
-    # Verificar formato básico
     if not re.match(r'^\d{7,8}$', value):
         raise ValidationError('El DNI debe tener 7 u 8 dígitos numéricos.')
     
-    # Verificar que no sea todo ceros
     if value == '0' * len(value):
         raise ValidationError('El DNI no puede ser todo ceros.')
     
-    # Verificar que el DNI sea un número válido (mayor a 0)
     if int(value) == 0:
         raise ValidationError('El DNI debe ser un número válido mayor a cero.')
 
 def validar_telefono(value):
-    """Valida formato de teléfono argentino y que no contenga solo símbolos"""
-    # Verificar formato básico
     if not re.match(r'^[\d\s\-\+\(\)]{8,20}$', value):
         raise ValidationError('Ingrese un número de teléfono válido.')
     
-    # Extraer solo dígitos
     digitos = re.sub(r'[^\d]', '', value)
     
-    # Verificar que tenga al menos 8 dígitos numéricos
     if len(digitos) < 8:
         raise ValidationError('El teléfono debe contener al menos 8 dígitos.')
     
-    # Verificar que no sea todo ceros
     if digitos == '0' * len(digitos):
         raise ValidationError('El teléfono no puede ser todo ceros.')
     
-    # Verificar que los dígitos formen un número positivo válido
     if int(digitos) == 0:
         raise ValidationError('El teléfono debe contener dígitos válidos.')
-
-# --- Modelos Base ---
 
 class TipoCancha(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
@@ -189,8 +175,6 @@ class Cancha(models.Model):
         verbose_name = "Cancha"
         verbose_name_plural = "Canchas"
         ordering = ['nombre']
-
-# --- Modelos de Complejidad Adicional ---
 
 class Servicio(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
@@ -522,7 +506,6 @@ class Partido(models.Model):
         ordering = ['torneo', 'ronda', 'numero_partido']
         unique_together = ('torneo', 'ronda', 'numero_partido')
 
-# --- Modelos Transaccionales ---
 
 class Reserva(models.Model):
     ESTADO_CHOICES = [
@@ -632,25 +615,180 @@ class Reserva(models.Model):
                 'cliente': 'Este cliente no está activo en el sistema.'
             })
     
-    def calcular_costo_total(self):
-        """Calcula el costo total de la reserva (cancha + servicios)"""
+    # PATRÓN STRATEGY
+    
+    def _calcular_costo_base(self):
+        """Calcula el costo base (cancha + servicios) sin descuentos"""
+        horas = (self.fecha_hora_fin - self.fecha_hora_inicio).total_seconds() / 3600
+        costo_cancha = Decimal(str(self.cancha.precio_por_hora)) * Decimal(str(horas))
+        costo_servicios = sum(Decimal(str(s.costo_adicional)) for s in self.servicios.all())
+        return costo_cancha + costo_servicios
+    
+    def _aplicar_descuento_cliente_frecuente(self):
+        """Descuento 10% si el cliente tiene 5+ reservas pagadas"""
+        reservas_pagadas = self.cliente.reservas.filter(estado='PAGADA').count()
+        if reservas_pagadas >= 5:
+            costo_base = self._calcular_costo_base()
+            return costo_base * Decimal('0.90')  # 10% descuento
+        return self._calcular_costo_base()
+    
+    def _aplicar_descuento_horario(self):
+        """Descuento 15% si la reserva es entre 8:00-12:00"""
+        hora_inicio = self.fecha_hora_inicio.time()
+        if time(8, 0) <= hora_inicio < time(12, 0):
+            costo_base = self._calcular_costo_base()
+            return costo_base * Decimal('0.85')  # 15% descuento
+        return self._calcular_costo_base()
+    
+    def _aplicar_recargo_horario_pico(self):
+        """Recargo 20% si la reserva es entre 18:00-22:00"""
+        hora_inicio = self.fecha_hora_inicio.time()
+        if time(18, 0) <= hora_inicio < time(22, 0):
+            costo_base = self._calcular_costo_base()
+            return costo_base * Decimal('1.20')  # 20% recargo
+        return self._calcular_costo_base()
+    
+    def _aplicar_descuento_torneo(self):
+        """Descuento 25% si la reserva es para un torneo"""
+        if self.torneo is not None:
+            costo_base = self._calcular_costo_base()
+            return costo_base * Decimal('0.75')  # 25% descuento
+        return self._calcular_costo_base()
+    
+    def calcular_costo_total(self, usar_mejor_precio=False):
+        """Calcula el costo total (usar_mejor_precio=True aplica el mejor descuento)"""
         if not self.fecha_hora_inicio or not self.fecha_hora_fin:
             return 0
         
-        # Costo de la cancha
-        horas = (self.fecha_hora_fin - self.fecha_hora_inicio).total_seconds() / 3600
-        costo_cancha = float(self.cancha.precio_por_hora) * horas
-        
-        # Costo de servicios adicionales
-        costo_servicios = sum(float(s.costo_adicional) for s in self.servicios.all())
-        
-        return costo_cancha + costo_servicios
+        # Patrón Strategy: Usar estrategias de cálculo de costo
+        if usar_mejor_precio:
+            # Calcular con todas las estrategias y elegir la mejor
+            estrategias = [
+                self._calcular_costo_base(),
+                self._aplicar_descuento_cliente_frecuente(),
+                self._aplicar_descuento_horario(),
+                self._aplicar_descuento_torneo(),
+            ]
+            mejor_precio = min(estrategias)
+            return float(mejor_precio)
+        else:
+            # Cálculo estándar (comportamiento original)
+            return float(self._calcular_costo_base())
     
     def duracion_horas(self):
         """Retorna la duración de la reserva en horas"""
         if not self.fecha_hora_inicio or not self.fecha_hora_fin:
             return 0
         return (self.fecha_hora_fin - self.fecha_hora_inicio).total_seconds() / 3600
+    
+    # PATRÓN STATE
+    
+    def puede_pagar(self):
+        """Verifica si la reserva puede ser pagada en su estado actual
+        
+        Unicamente retorna True si se puede pagar, False caso contrario
+        """
+        return self.estado == 'PENDIENTE'
+    
+    def puede_cancelar(self):
+        """Verifica si la reserva puede ser cancelada en su estado actual
+        
+        Unicamente retorna True si se puede cancelar, False caso contrario
+        """
+        return self.estado in ['PENDIENTE', 'PAGADA']
+    
+    def puede_editar(self):
+        """Verifica si la reserva puede ser editada en su estado actual
+        
+        Unicamente retorna True si se puede editar, False caso contrario
+        """
+        return self.estado == 'PENDIENTE'
+    
+    def pagar(self, metodo_pago='EFECTIVO', comprobante=''):
+        """Marca la reserva como pagada usando el patrón State
+        
+        Args:
+            metodo_pago: Método de pago utilizado
+            comprobante: Número de comprobante
+            
+        Returns:
+            bool: True si se pudo pagar exitosamente
+            
+        Raises:
+            ValueError: Si no se puede pagar en el estado actual
+        """
+        if not self.puede_pagar():
+            raise ValueError(f"No se puede pagar una reserva en estado {self.estado}")
+        
+        # Actualizar reserva
+        self.estado = 'PAGADA'
+        self.save()
+        
+        # Actualizar pago si existe
+        if hasattr(self, 'pago'):
+            self.pago.marcar_como_pagado(metodo_pago, comprobante)
+        
+        return True
+    
+    def cancelar(self, motivo=None):
+        """Cancela la reserva usando el patrón State
+        
+        Args:
+            motivo: Motivo de la cancelación (opcional)
+            
+        Returns:
+            bool: True si se pudo cancelar exitosamente
+            
+        Raises:
+            ValueError: Si no se puede cancelar en el estado actual
+        """
+        if not self.puede_cancelar():
+            raise ValueError(f"No se puede cancelar una reserva en estado {self.estado}")
+        
+        estado_anterior = self.estado
+        self.estado = 'CANCELADA'
+        
+        if motivo:
+            obs_actual = self.observaciones or ""
+            prefijo = "Cancelación (requiere reembolso)" if estado_anterior == 'PAGADA' else "Cancelación"
+            self.observaciones = f"{obs_actual}\n{prefijo}: {motivo}".strip()
+        
+        self.save()
+        
+        # Si estaba pagada, marcar pago como reembolsado
+        if estado_anterior == 'PAGADA' and hasattr(self, 'pago'):
+            self.pago.estado = 'REEMBOLSADO'
+            self.pago.save()
+        
+        return True
+    
+    def get_info_estado(self):
+        """Obtiene información completa sobre el estado actual
+        
+        Returns:
+            dict: Diccionario con información del estado y acciones permitidas
+        """
+        estado_nombres = {
+            'PENDIENTE': 'Pendiente',
+            'PAGADA': 'Pagada',
+            'CANCELADA': 'Cancelada',
+        }
+        
+        acciones = []
+        if self.puede_pagar():
+            acciones.append('pagar')
+        if self.puede_cancelar():
+            acciones.append('cancelar')
+        if self.puede_editar():
+            acciones.append('editar')
+        
+        return {
+            'estado': estado_nombres.get(self.estado, self.estado),
+            'puede_pagar': self.puede_pagar(),
+            'puede_cancelar': self.puede_cancelar(),
+            'puede_editar': self.puede_editar(),
+            'acciones_permitidas': acciones,
+        }
 
     class Meta:
         # Evita que se pueda reservar la misma cancha en el mismo horario

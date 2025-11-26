@@ -66,7 +66,7 @@
 </div>
 
 <!-- Tarjetas de Estadísticas -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
     <div class="card shadow-xl" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <div class="card-body text-white">
             <div class="flex items-center justify-between">
@@ -96,6 +96,25 @@
     </div>
 
     <div class="card shadow-xl" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="card-body text-white">
+            <div class="flex items-center justify-between">
+                <div class="w-full">
+                    <p class="text-sm font-bold mb-1">Partidos</p>
+                    <h3 class="text-4xl font-bold">{{ total_partidos }}</h3>
+                    <p class="text-xs mt-1">
+                        {% if partidos_completados > 0 %}Finalizados: {{ partidos_completados }}{% endif %}
+                        {% if partidos_pendientes > 0 %}<br>Pendientes: {{ partidos_pendientes }}{% endif %}
+                        {% if total_partidos == 0 %}Sin partidos generados{% endif %}
+                    </p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 opacity-30 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-xl" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
         <div class="card-body text-white">
             <div class="flex items-center justify-between">
                 <div class="w-full">
@@ -223,6 +242,64 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Últimos Partidos -->
+{% if total_partidos > 0 %}
+<div class="card bg-base-100 shadow-xl mt-6">
+    <div class="card-body">
+        <h3 class="card-title text-2xl mb-4">
+            ⚽ Últimos Partidos
+            <span class="badge badge-secondary badge-lg">{{ total_partidos }}</span>
+            <a href="{% url 'torneo_fixture' torneo.pk %}" class="btn btn-sm btn-primary gap-2 ml-auto">
+                Ver Fixture Completo
+            </a>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for partido in partidos %}
+            <div class="card bg-base-200 shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs text-base-content/60">{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                        <span class="badge badge-xs 
+                            {% if partido.estado == 'FINALIZADO' %}badge-success
+                            {% elif partido.estado == 'EN_CURSO' %}badge-warning
+                            {% else %}badge-info
+                            {% endif %}">
+                            {{ partido.get_estado_display }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold">{{ partido.equipo1.nombre }}</span>
+                                {% if partido.estado == 'FINALIZADO' and partido.resultado_equipo1 is not None %}
+                                <span class="badge badge-lg font-bold">{{ partido.resultado_equipo1 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold">{{ partido.equipo2.nombre }}</span>
+                                {% if partido.estado == 'FINALIZADO' and partido.resultado_equipo2 is not None %}
+                                <span class="badge badge-lg font-bold">{{ partido.resultado_equipo2 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-base-content/60 mt-2">
+                        Ronda {{ partido.ronda }} - Partido #{{ partido.numero_partido }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% elif torneo.estado != 'INSCRIPCION' %}
+<div class="alert alert-warning mt-6">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+    <span>Este torneo no tiene partidos programados todavía.</span>
+</div>
+{% endif %}
 </div>
 
 {% endblock %}
