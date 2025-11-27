@@ -139,7 +139,7 @@
                     <div class="stat bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
                         <div class="stat-title">Total Clientes</div>
                         <div class="stat-value text-primary">{{ clientes_con_reservas|length }}</div>
-                        <div class="stat-desc">con reservas en el período</div>
+                        <div class="stat-desc text-gray-700 font-semibold">con reservas en el período</div>
                     </div>
                     <div class="stat bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
                         <div class="stat-title">Mayor Gasto</div>
@@ -150,7 +150,7 @@
                                 $0
                             {% endif %}
                         </div>
-                        <div class="stat-desc">del cliente con más gasto</div>
+                        <div class="stat-desc text-gray-700 font-semibold">del cliente con más gasto</div>
                     </div>
                 </div>
             </div>
@@ -246,7 +246,7 @@
                     <div class="stat bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
                         <div class="stat-title">Cancha Top</div>
                         <div class="stat-value text-primary text-lg">{{ canchas_con_reservas.0.cancha.nombre }}</div>
-                        <div class="stat-desc">${{ canchas_con_reservas.0.total_ingresos|floatformat:0 }} en ingresos</div>
+                        <div class="stat-desc text-gray-700 font-semibold">${{ canchas_con_reservas.0.total_ingresos|floatformat:0 }} en ingresos</div>
                     </div>
                     <div class="stat bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
                         <div class="stat-title">Total Horas Jugadas</div>
@@ -254,7 +254,7 @@
                             {% widthratio canchas_con_reservas|length 1 1 as total %}
                             {{ canchas_con_reservas.0.total_horas|floatformat:1 }}h
                         </div>
-                        <div class="stat-desc">de la cancha más utilizada</div>
+                        <div class="stat-desc text-gray-700 font-semibold">de la cancha más utilizada</div>
                     </div>
                 </div>
             </div>
